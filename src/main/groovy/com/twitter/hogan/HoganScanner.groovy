@@ -29,18 +29,18 @@ class HoganToken {
 
 /** Helper object */
 class Hogan {
-	static compile(String text, Map options = [:]) {
+	static compile(String source, Map options = [:]) {
 		def scanner = new HoganScanner()
 		def parser = new HoganParser()
 		def compiler = new GroovyHoganCompiler()
 
-		def tokens = scanner.scan(text)
+		def tokens = scanner.scan(source, options.delimiters)
 		def tree = parser.parse(tokens)
 
 		if (options.asString) {
 			compiler.generate(tree)
 		} else {
-			compiler.compile(tree)
+			compiler.compile(tree, source, options)
 		}
 	}
 }
@@ -83,6 +83,8 @@ class HoganPage extends Script {
 	 private static final Set<Class<?>> WRAPPER_TYPES = getWrapperTypes();
 
 	String source
+	String generated
+	List tokens
 	HoganCompiler compiler
 	Map options
 
@@ -128,7 +130,7 @@ class HoganPage extends Script {
 		if (!partial) return ''
 
 		if (compiler && partial instanceof String) {
-			partial = compiler.compile(partial, options)
+			partial = compiler.compile(partial.toString(), options)
 		}
 
 		return partial.ri(context, partials, indent)
@@ -153,11 +155,15 @@ class HoganPage extends Script {
 	def s(def val, Deque ctx, Map partials, boolean inverted, int start, int end, String tags) {
 		def pass
 
+		if (isArray(val) && val.size() == 0) {
+			return false
+		}
+
 		if (val instanceof Closure) {
 			val = ls(val, ctx, partials, inverted, start, end , tags)
 		}
 
-		pass = (val == '') || val // default groovy truthy with empty string counting as 'true'
+		pass = (val == '') || val as Boolean // default groovy truthy with empty string counting as 'true'
 
 		if (!inverted && pass && ctx) {
 			ctx.push(isPrimitive(val) ? ctx.peek() : val)
@@ -234,7 +240,7 @@ class HoganPage extends Script {
 		// because Groovy Closures have the default 'it' argument, higher order
 		// templates must have 2 arguments
 		if (!inverted && compiler && val.maximumNumberOfParameters > 1) {
-			this.ho(val, cx, partials, source[start..<end], tags)
+			return this.ho(val, cx, partials, source[start..<end], tags)
 		}
 
 		def c = val.clone()
@@ -329,7 +335,7 @@ abstract class HoganCompiler {
 	static NEWLINE_PATTERN = ~/\n/
 	static CR_PATTERN = ~/\r/
 
-	abstract void writeCode(tree, name)
+	abstract void writeCode(tree)
 	abstract void section(nodes, id, method, start, end, tags)
 	abstract void invertedSection(nodes, id, method)
 	abstract void partial(tok)
@@ -339,9 +345,9 @@ abstract class HoganCompiler {
 
 	private StringBuilder buffer = new StringBuilder()
 
-	String generate(List tree, String name) {
+	String generate(List tree) {
 		buffer = new StringBuilder()
-		writeCode(tree, name)
+		writeCode(tree)
 		return buffer.toString()
 	}
 
@@ -406,20 +412,21 @@ class GroovyHoganCompiler extends HoganCompiler {
 		def scanner = new HoganScanner()
 		def parser = new HoganParser()
 
-		def tokens = scanner.scan(source)
+		def tokens = scanner.scan(source, options.delimiters)
 		def tree = parser.parse(tokens)
-		compile(tree, options)
+		compile(tree, source, options)
 	}
 
-	HoganPage compile(List tree, Map options = [:]) {
-		def name = options.name ?: "hogan${System.nanoTime()}_${counter.incrementAndGet()} "
-		def source = generate(tree, name)
-		def clazz = classLoader.parseClass(source)
+	HoganPage compile(List tree, String source, Map options = [:]) {
+		def generated = generate(tree)
+		def clazz = classLoader.parseClass(generated)
 		def args = new Object[3]
 		args[0] = source
 		args[1] = this
 		args[2] = options
-		return (HoganPage)clazz.newInstance(args)
+		def page = (HoganPage)clazz.newInstance(args)
+		page.generated = generated
+		page
 	}
 
 	void writeImports() {
@@ -429,8 +436,11 @@ class GroovyHoganCompiler extends HoganCompiler {
 		println()
 	}
 
-	void writeCode(tree, name) {
+	void writeCode(tree) {
 		writeImports()
+
+		def name = "hogan${System.nanoTime()}_${counter.incrementAndGet()}"
+
 
 		print('class ')
 		print(name)
@@ -565,7 +575,7 @@ class HoganScanner {
 	String ctag = '}}'
 	def seenTag = false
 
-	def scan(String text, List delimiters = null) {
+	def scan(String text, String delimiters = null) {
 		def tagType
 
 		State state = State.IN_TEXT
@@ -577,6 +587,11 @@ class HoganScanner {
 		lineStart = 0
 
 		// TODO: handle passed in delimiters
+		if (delimiters) {
+			def d = delimiters.split()
+			otag = d[0]
+			ctag = d[1]
+		}
 
 		for (i = 0; i < len; i++) {
 			if (state == State.IN_TEXT) {
@@ -640,13 +655,13 @@ class HoganScanner {
 
 		if (haveSeenTag && lineIsWhitespace()) {
 			for (int j = lineStart; j < tokens.size(); j++) {
-				if (tokens[j] instanceof String && j < (tokens.size() - 1)) {
-					def next = tokens[j+1]
-
-					if (next.tag == '>') {
-						next.indent = tokens[j]
+				if (tokens[j] instanceof String) {
+					if (j < (tokens.size() - 1)) {
+						def next = tokens[j+1]
+						if (next.tag == '>') {
+							next.indent = tokens[j]
+						}
 					}
-
 					tokens.remove(j)
 				}
 			}
