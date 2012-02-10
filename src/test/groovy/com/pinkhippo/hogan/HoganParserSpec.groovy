@@ -1,4 +1,4 @@
-package com.twitter.hogan
+package com.pinkhippo.hogan
 
 import spock.lang.Specification
 

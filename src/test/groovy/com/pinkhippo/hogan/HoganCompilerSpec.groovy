@@ -1,6 +1,6 @@
-package com.twitter.hogan
+package com.pinkhippo.hogan
 
-import spock.lang.Specification
+import spock.lang.*
 
 class HoganCompilerSpec extends Specification {
 
@@ -268,7 +268,7 @@ class HoganCompilerSpec extends Specification {
 
 	}
 
-	def 'section extensions in lam replace variable'() {
+	def 'section extensions in lambda replace variable'() {
 
 	}
 
@@ -343,6 +343,72 @@ class HoganCompilerSpec extends Specification {
 			def s = t.render()
 		then:
 			'Begin.\nEnd.' == s
+	}
+
+	@Shared
+	def tests = [
+		[
+			name: 'testNewLineBetweenDelimiterChanges',
+			desc: 'render correct',
+			text: '\n{{#section}}\n {{data}}\n |data|\n{{/section}}x\n\n{{= | | =}}\n|#section|\n {{data}}\n |data|\n|/section|',
+			data: [ section: true, data : 'I got interpolated.' ],
+			expected: '\n I got interpolated.\n |data|\nx\n\n {{data}}\n I got interpolated.\n'
+		],[
+			name: 'testMustacheJSApostrophe',
+			desc: 'Apostrophe is escaped.',
+			text: '{{apos}}{{control}}',
+			data: [apos: "'", control: 'X'],
+			expected: '&#39;X'
+		],[
+			name: 'testMustacheJSArrayOfImplicitPartials',
+			desc: 'Partials with implicit iterators work.',
+			text: 'Here is some stuff!\n{{#numbers}}\n{{>partial}}\n{{/numbers}}\n',
+			data: [numbers: [1,2,3,4]],
+			partials: [partial: '{{.}}\n'],
+			expected: 'Here is some stuff!\n1\n2\n3\n4\n'
+		],[
+			name: 'testMustacheJSArrayOfPartials',
+			desc: 'Partials with arrays work.',
+			text: 'Here is some stuff!\n{{#numbers}}\n{{>partial}}\n{{/numbers}}\n',
+			data: [numbers: [[i:1], [i:2], [i:3], [i:4]]],
+			partials: [partial: '{{i}}\n'],
+			expected: 'Here is some stuff!\n1\n2\n3\n4\n'
+		],[
+			name: 'testMustacheJSArrayOfStrings',
+			desc: 'array of strings works with implicit iterators.',
+			text: '{{#strings}}{{.}} {{/strings}}',
+			data: [strings: ['foo', 'bar', 'baz']],
+			expected: 'foo bar baz '
+		],[
+			name: 'testMustacheJSNullString',
+			desc: 'undefined value does not render.',
+			text: 'foo{{bar}}baz',
+			data: [bar: null],
+			expected: 'foobaz'
+		],[
+			name: 'testMustacheJSNullTripleStache',
+			desc: 'undefined value does not render in triple stache.',
+			text: 'foo{{{bar}}}baz',
+			data: [bar: null],
+			expected: 'foobaz'
+		],[
+			name: 'testMustacheJSTripleStacheAltDelimiter',
+			desc: 'triple stache inside alternate delimiter works.',
+			text: '{{=<% %>=}}<% foo %> {{foo}} <%{bar}%> {{{bar}}}',
+			data: [foo: 'yeah', bar: 'hmm'],
+			expected: 'yeah {{foo}} hmm {{{bar}}}'
+		]
+	]
+
+	@Unroll({"${test.name}: ${test.desc}"})
+	def 'shared tests'() {
+		when:
+			def t = Hogan.compile(test.text)
+			def s = t.render(test.data, test.partials)
+		then:
+			s == test.expected
+		where:
+			test << tests
 	}
 
 	def 'shoot out complex'() {
