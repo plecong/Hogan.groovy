@@ -13,5 +13,6 @@ class HoganToken {
 	String ctag
 	def nodes
 	def end
+	boolean last
 }
 

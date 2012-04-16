@@ -21,79 +21,141 @@ abstract class HoganPage extends Script {
 	HoganCompiler compiler
 	Map options
 
-	private StringBuilder buffer = new StringBuilder()
+	Map partials = [:]
+	Map subs = [:]
 
-	HoganPage(String source, HoganCompiler compiler, Map options = [:]) {
+	private StringBuilder buffer
+
+	HoganPage(String source, HoganCompiler compiler, Map options = [:], Map p = [:], Map u = [:]) {
 		this.source = source
 		this.compiler = compiler
 		this.options = options
+
+		this.partials += codeData.partials + p
+		this.subs += codeData.subs + u
+
+		ib();
 	}
 
 	Object run() {
 		render(getBinding()?.variables)
 	}
 
-	// overridden by compiled, maybe abstract
+	// overridden by compiled
+	abstract Map getCodeData()
 	abstract String r(Deque context, Map partials, String indent)
 
+	// variable escaping (was hoganEscape())
+	String v(def str) {
+		str = t(str)
+		return HCHARS_PATTERN.matcher(str) ?
+			str
+				.replaceAll(AMP_PATTERN, '&amp;')
+				.replaceAll(LT_PATTERN, '&lt;')
+				.replaceAll(GT_PATTERN, '&gt;')
+				.replaceAll(APOS_PATTERN, '&#39;')
+				.replaceAll(QUOT_PATTERN, '&quot;') :
+			str
+	}
+
+	// triple stache
 	String t(def val) {
+		coerceToString(val)
+	}
+
+	String coerceToString(def val) {
 		val == null ? '' : val as String
 	}
 
-	def render(Map context = [:], Map partials = [:], String indent = null) {
-		buffer = new StringBuilder()
+	def render(Map context = [:], Map partials = [:], String indent = '') {
 		def contextStack = new ArrayDeque()
-		contextStack.push(context)
-		ri(contextStack, partials, indent)
+		contextStack.push(context ?: [:])
+		ri(contextStack, partials ?: [:], indent)
 	}
 
-	def ri(Deque context, Map partials, String indent) {
+	// render internal
+	def ri(Deque context, Map partials, String indent = '') {
 		r(context, partials, indent)
 	}
 
-	def rp(String name, Deque context, Map partials, String indent) {
-		def partial = partials[name]
+	// ensure partial
+	def ep(String symbol, Map partials) {
+		def partial = this.partials[symbol]
+		def template = partials[partial.name]
+		def compiledTemplate = null
 
-		if (!partial) return ''
-
-		if (compiler && partial instanceof String) {
-			partial = compiler.compile(partial.toString(), options)
+		if (partial.instance && partial.base == template) {
+			return partial.instance
 		}
 
-		return partial.ri(context, partials, indent)
+		if (template instanceof HoganPage) {
+			compiledTemplate = template
+		} else if (template instanceof String) {
+			if (!compiler) {
+				throw new RuntimeException('No compiler available.')
+			}
+			compiledTemplate = compiler.compile(template, options + [name: getClass().name + '_' + partial.name])
+		}
+
+		if (!compiledTemplate) {
+			return null
+		}
+
+		partial.base = compiledTemplate
+		if (partial.subs) {
+			// this is "specialized" because it has it's own set of subs
+			// that will override the default ones compiled into the template
+			// based on this execution
+			compiledTemplate = createSpecializedPartial(compiledTemplate, partial.subs, partial.partials)
+		}
+		partial.instance = compiledTemplate
+		return partial.instance
 	}
 
+	// render partial
+	def rp(String symbol, Deque context, Map partials, String indent) {
+		def partial = this.ep(symbol, partials)
+		partial ? partial.ri(context, partials, indent) : ''
+	}
+
+	// render section
 	def rs(Deque context, Map partials, Closure section) {
 		def tail = context.peek()
 
 		if (!ObjectUtils.isArray(tail)) {
 			// do we need to clone here?
-			section.call()
+			def c = section.clone()
+			c.call() // the generated code will inherit the context/partials references
 			return
 		}
 
 		tail.each {
 			context.push(it)
-			section.call()
+			def c = section.clone()
+			c.call()
 			context.pop()
 		}
 	}
 
+	// section
 	def s(def val, Deque ctx, Map partials, boolean inverted, int start, int end, String tags) {
-		def pass
+		boolean pass
 
+		// TODO: check if also a collection
 		if (ObjectUtils.isArray(val) && val.size() == 0) {
 			return false
 		}
 
 		if (val instanceof Closure) {
-			val = ls(val, ctx, partials, inverted, start, end , tags)
+			val = this.ms(val, ctx, partials, inverted, start, end, tags)
 		}
 
-		pass = (val == '') || val as Boolean // default groovy truthy with empty string counting as 'true'
+		// default groovy truthyness will work now that the js code is
+		// (val === 0) || !!val
+		pass = val == '' || val as Boolean
 
 		if (!inverted && pass && ctx) {
-			ctx.push(ObjectUtils.isPrimitive(val) ? ctx.peek() : val)
+			ctx.push(!ObjectUtils.isPrimitive(val) ? val : ctx.peek())
 		}
 
 		return pass
@@ -104,7 +166,7 @@ abstract class HoganPage extends Script {
 		def val = f(names[0], ctx, partials, returnFound)
 		def cx = null
 
-		if (key == '.' && ObjectUtils.isArray(ctx.toArray()[1])) {
+		if (key == '.' && ObjectUtils.isArray(ctx.toArray()[-2])) {
 			return ctx.peek()
 		}
 
@@ -123,13 +185,14 @@ abstract class HoganPage extends Script {
 
 		if (!returnFound && val instanceof Closure) {
 			ctx.push(cx)
-			val = this.lv(val, ctx, partials)
+			val = this.mv(val, ctx, partials)
 			ctx.pop()
 		}
 
 		return val
 	}
 
+	// find
 	def f(String key, Deque ctx, Map partials, boolean returnFound) {
 		def level = ctx.find { m -> ObjectUtils.hasProperty(m, key) }
 
@@ -140,88 +203,102 @@ abstract class HoganPage extends Script {
 		def val = level[key]
 
 		if (!returnFound && val instanceof Closure) {
-			val = this.lv(val, ctx, partials)
+			val = this.mv(val, ctx, partials)
 		}
 
 		val
 	}
 
-	def ho(Closure val, def cx, Map partials, String text, String tags) {
-		def opts = [:] + options
-		opts.delimiters = tags
+	// lambda section: higher order templates
+	def ls(Closure val, Map cx, Map partials, String text, String tags) {
+		def cl = val.clone()
+		cl.delegate = cx
+		def result
 
-		def c = val.clone()
-		c.delegate = cx
-
-		def t = c.call(text, { t ->
-			compiler.compile(t, opts).render(cx, partials)
-		})
-		b(compiler.compile(t.toString(), opts).render(cx, partials))
-
-		false
-	}
-
-	def ls(Closure val, Deque ctx, Map partials, boolean inverted, int start, int end, String tags) {
-		def cx = ctx.peek()
-
-		// because Groovy Closures have the default 'it' argument, higher order
-		// templates must have 2 arguments
-		if (!inverted && compiler && val.maximumNumberOfParameters > 1) {
-			return this.ho(val, cx, partials, source[start..<end], tags)
+		if (cl.maximumNumberOfParameters >= 1) {
+			result = cl.call(text)
+		} else {
+			result = cl.call()
 		}
 
-		def c = val.clone()
-		c.delegate = cx
-		def t = c.call() // should the text be passed in here? thinking no
-
-		if (t instanceof Closure) {
-			if (inverted) {
-				return true
-			} else if (compiler) {
-				return this.ho(t, cx, partials, source[start..<end], tags)
-			}
-		}
-
-		return t
+		b(ct(coerceToString(result), cx, partials, [delimiters: tags]))
+		return false
 	}
 
-	def lv(Closure val, Deque ctx, Map partials) {
+	// compile template
+	def ct(String text, Map cx, Map partials, Map options = [:]) {
+		if (this.options.disableLambda) {
+			throw new RuntimeException('Lambda features disabled.')
+		}
+		compiler.compile(text, this.options + options).render(cx, partials)
+	}
+
+	// buffer
+	void b(s) {
+		buffer << (s ?: '')
+	}
+
+	// flush buffer
+	String fl() {
+		def output = buffer.toString()
+		ib()
+		output
+	}
+
+	// init the buffer
+	void ib() {
+		this.buffer = new StringBuilder()
+	}
+
+	// method replace section
+	def ms(Closure func, Deque ctx, Map partials, boolean inverted, int start, int end, String tags) {
 		def cx = ctx.peek()
-		def result = val.call(cx)
+		def cl = func.clone()
+		cl.delegate = cx
+		def result = cl.call()
 
 		if (result instanceof Closure) {
-			result = result.call(cx)
-		}
-
-		result = t(result)
-
-		if (compiler && ~result.indexOf("{\u007B")) {
-			return compiler.compile(result, options).render(cx, partials)
+			if (inverted) {
+				return true
+			} else {
+				return ls(result, cx, partials, this.source[start..<end], tags)
+			}
 		}
 
 		return result
 	}
 
-	void b(s) {
-		buffer << (s ?: '')
+	// method replace variable
+	def mv(Closure func, Deque ctx, Map partials) {
+		def cx = ctx.peek()
+		def cl = func.clone()
+		cl.delegate = cx
+		def result = cl.call()
+
+		if (result instanceof Closure) {
+			def resultCl = result.clone()
+			resultCl.delegate = cx
+			return ct(coerceToString(resultCl.call()), cx, partials)
+		}
+
+		return result
 	}
 
-	String fl() {
-		def output = buffer.toString()
-		buffer = new StringBuilder()
-		output
+	// sub
+	def sub(String name, Deque context, Map partials) {
+		def cl = subs[name]
+
+		if (!cl) {
+			throw new RuntimeException('Missing subs for name: "' + name + '", subs: ' + subs)
+		}
+
+		cl.clone().call(context, partials, this)
 	}
 
-	String v(def str) {
-		str = t(str)
-		return HCHARS_PATTERN.matcher(str) ?
-			str
-				.replaceAll(AMP_PATTERN, '&amp;')
-				.replaceAll(LT_PATTERN, '&lt;')
-				.replaceAll(GT_PATTERN, '&gt;')
-				.replaceAll(APOS_PATTERN, '&#39;')
-				.replaceAll(QUOT_PATTERN, '&quot;') :
-			str
+	private def createSpecializedPartial(HoganPage template, Map extraSubs, Map extraPartials) {
+		def other = template.class.newInstance(source, compiler, options, extraPartials, extraSubs)
+		other.ib()
+		other
 	}
 
 }

@@ -10,46 +10,42 @@ class HoganScannerSpec extends Specification {
 		scanner = new HoganScanner()
 	}
 
-	def 'scan text no tags'() {
-		setup:
-			def text = '<h2>hi</h2>'
+	def 'Scan Text No Tags'() {
 		when:
+			def text = '<h2>hi</h2>'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 1
-			tokens[0] == text
+			tokens[0].text == text
 	}
 
-	def 'scan one tag'() {
-		setup:
-			def text = '{{hmm}}'
+	def 'Scan One Tag'() {
 		when:
+			def text = '{{hmm}}'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 1
 			tokens[0].n == 'hmm'
 	}
 
-	def 'scan multiple tags'() {
-		setup:
-			def text = 'asdf{{hmm}}asdf2{{hmm2}}asdf3'
+	def 'Scan Multiple Tags'() {
 		when:
+			def text = 'asdf{{hmm}}asdf2{{hmm2}}asdf3'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 5
-			tokens[0] == 'asdf'
+			tokens[0].text == 'asdf'
 			tokens[1].n == 'hmm'
 			tokens[1].tag == '_v'
-			tokens[2] == 'asdf2'
+			tokens[2].text == 'asdf2'
 			tokens[3].n == 'hmm2'
 			tokens[3].tag == '_v'
-			tokens[4] == 'asdf3'
+			tokens[4].text == 'asdf3'
 	}
 
-	def 'scan section open'() {
-		setup:
-			def text = '{{#hmm}}'
+	def 'Scan Section Open'() {
 		when:
+			def text = '{{#hmm}}'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 1
@@ -57,10 +53,9 @@ class HoganScannerSpec extends Specification {
 			tokens[0].tag == '#'
 	}
 
-	def 'scan section close'() {
-		setup:
-			def text = '{{/hmm}}'
+	def 'Scan Section Close'() {
 		when:
+			def text = '{{/hmm}}'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 1
@@ -68,10 +63,9 @@ class HoganScannerSpec extends Specification {
 			tokens[0].tag == '/'
 	}
 
-	def 'scan section'() {
-		setup:
-			def text = '{{#hmm}}{{/hmm}}'
+	def 'Scan Section'() {
 		when:
+			def text = '{{#hmm}}{{/hmm}}'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 2
@@ -81,26 +75,24 @@ class HoganScannerSpec extends Specification {
 			tokens[1].tag == '/'
 	}
 
-	def 'scan section in content'() {
-		setup:
-			def text = 'abc{{#hmm}}def{{/hmm}}ghi'
+	def 'Scan Section In Content'() {
 		when:
+			def text = 'abc{{#hmm}}def{{/hmm}}ghi'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 5
-			tokens[0] == 'abc'
+			tokens[0].text == 'abc'
 			tokens[1].n == 'hmm'
 			tokens[1].tag == '#'
-			tokens[2] == 'def'
+			tokens[2].text == 'def'
 			tokens[3].n == 'hmm'
 			tokens[3].tag == '/'
-			tokens[4] == 'ghi'
+			tokens[4].text == 'ghi'
 	}
 
-	def 'scan negative section'() {
-		setup:
-			def text = '{{^hmm}}{{/hmm}}'
+	def 'Scan Negative Section'() {
 		when:
+			def text = '{{^hmm}}{{/hmm}}'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 2
@@ -110,10 +102,9 @@ class HoganScannerSpec extends Specification {
 			tokens[1].tag == '/'
 	}
 
-	def 'scan partial'() {
-		setup:
-			def text = '{{>hmm}}'
+	def 'Scan Partial'() {
 		when:
+			def text = '{{>hmm}}'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 1
@@ -121,10 +112,9 @@ class HoganScannerSpec extends Specification {
 			tokens[0].tag == '>'
 	}
 
-	def 'scan backward partial'() {
-		setup:
-			def text = '{{<hmm}}'
+	def 'Scan Backward Partial'() {
 		when:
+			def text = '{{<hmm}}'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 1
@@ -132,10 +122,9 @@ class HoganScannerSpec extends Specification {
 			tokens[0].tag == '<'
 	}
 
-	def 'scan ampersand no escape tag'() {
-		setup:
-			def text = '{{&hmm}}'
+	def 'Scan Ampersand No Escape Tag'() {
 		when:
+			def text = '{{&hmm}}'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 1
@@ -143,10 +132,9 @@ class HoganScannerSpec extends Specification {
 			tokens[0].tag == '&'
 	}
 
-	def 'scan triple stache'() {
-		setup:
-			def text = '{{{hmm}}'
+	def 'Scan Triple Stache'() {
 		when:
+			def text = '{{{hmm}}'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 1
@@ -154,51 +142,48 @@ class HoganScannerSpec extends Specification {
 			tokens[0].tag == '{'
 	}
 
-	def 'scan section with triple stache inside'() {
-		setup:
-			def text = 'a{{#yo}}b{{{hmm}}}c{{/yo}}d'
+	def 'Scan Section With Triple Stache Inside'() {
 		when:
+			def text = 'a{{#yo}}b{{{hmm}}}c{{/yo}}d'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 7
-			tokens[0] == 'a'
+			tokens[0].text == 'a'
 			tokens[1].n == 'yo'
 			tokens[1].tag == '#'
-			tokens[2] == 'b'
+			tokens[2].text == 'b'
 			tokens[3].n == 'hmm'
 			tokens[3].tag == '{'
-			tokens[4] == 'c'
+			tokens[4].text == 'c'
 			tokens[5].n == 'yo'
 			tokens[5].tag == '/'
-			tokens[6] == 'd'
+			tokens[6].text == 'd'
 	}
 
-	def 'scan set delimiter'() {
-		setup:
+	def 'Scan Set Delimiter'() {
+		when:
 			def text = 'a{{=<% %>=}}b'
-		when:
 			def tokens = scanner.scan(text)
-		then: "change delimiter doesn't appear as token"
+		then:
 			tokens.size() == 2
-			tokens[0] == 'a'
-			tokens[1] == 'b'
+			tokens[0].text == 'a'
+			tokens[1].text == 'b'
 	}
 
-	def 'scan reset delimiter'() {
-		setup:
-			def text = 'a{{=<% %>=}}b<%hmm%>c<%={{ }}=%>d{{hmm}}'
+	def 'Scan Reset Delimiter'() {
 		when:
+			def text = 'a{{=<% %>=}}b<%hmm%>c<%={{ }}=%>d{{hmm}}'
 			def tokens = scanner.scan(text)
 		then:
 			tokens.size() == 6
-			tokens[0] == 'a'
-			tokens[1] == 'b'
-			tokens[2].n == 'hmm'
+			tokens[0].text == 'a'
+			tokens[1].text == 'b'
 			tokens[2].tag == '_v'
-			tokens[3] == 'c'
-			tokens[4] == 'd'
-			tokens[5].n == 'hmm'
+			tokens[2].n == 'hmm'
+			tokens[3].text == 'c'
+			tokens[4].text == 'd'
 			tokens[5].tag == '_v'
+			tokens[5].n == 'hmm'
 	}
 
 }

@@ -3,63 +3,90 @@ package com.pinkhippo.hogan
 abstract class HoganCompiler {
 
 	static QUOT_PATTERN = ~/\"/
+	static SINGLE_QUOT_PATTERN = ~/\'/
 	static NEWLINE_PATTERN = ~/\n/
 	static CR_PATTERN = ~/\r/
 
-	abstract void writeCode(tree)
-	abstract void section(nodes, id, method, start, end, tags)
-	abstract void invertedSection(nodes, id, method)
-	abstract void partial(tok)
-	abstract void tripleStache(id, method)
-	abstract void variable(id, method)
-	abstract void text(id)
+	// generates the final code
+	abstract def stringify(Map codeObj, String text, Map options)
+	// #
+	abstract void section(node, context)
+	// ^
+	abstract void invertedSection(node, context)
+	// >
+	abstract void partial(node, context)
+	// <
+	abstract void include(node, context)
+	// $
+	abstract void includeSub(node, context)
+	// \n
+	abstract void newLine(node, context)
+	// _v
+	abstract void variable(node, context)
+	// _t
+	abstract void text(node, context)
+	// & and {
+	abstract void tripleStache(node, context)
 
-	private StringBuilder buffer = new StringBuilder()
-
-	String generate(List tree) {
-		buffer = new StringBuilder()
-		writeCode(tree)
-		return buffer.toString()
+	String generate(List tree, String source, Map options = [:]) {
+		def context = [code: createBuffer(), subs: [:], partials: [:], serialNo: 0]
+		walk(tree, context)
+		stringify(context, source, options) // can only output strings
 	}
 
-	protected walk(tree) {
-		tree.eachWithIndex { token, i ->
-			def tag = (token instanceof String) ? null : token.tag
-			if (tag == '#') {
-				section(token.nodes, token.n, chooseMethod(token.n), token.i, token.end, token.otag + ' ' + token.ctag)
-			} else if (tag == '^') {
-				invertedSection(token.nodes, token.n, chooseMethod(token.n))
-			} else if (tag == '>' || tag == '<') {
-				partial(token)
-			} else if (tag == '{' || tag == '&') {
-				tripleStache(token.n, chooseMethod(token.n))
-			} else if (tag == '\n') {
-				text('"\\n"')
-				text(tree.size() - 1 == i ? '' : 'i')
-			} else if (tag == '_v') {
-				variable(token.n, chooseMethod(token.n))
-			} else if (token instanceof String) {
-				text('"' + esc(token) + '"')
+	def createBuffer() {
+		new StringBuffer()
+	}
+
+	protected def walk(nodeList, context) {
+		nodeList.each { node ->
+			switch(node.tag) {
+				case '#':
+					section(node, context)
+					break
+				case '^':
+					invertedSection(node, context)
+					break
+				case '>':
+					partial(node, context)
+					break
+				case '<':
+					include(node, context)
+					break
+				case '$':
+					includeSub(node, context)
+					break
+				case '\n':
+					newLine(node, context)
+					break
+				case '_v':
+					variable(node, context)
+					break
+				case '_t':
+					text(node, context)
+					break
+				case '&':
+				case '{':
+					tripleStache(node, context)
+					break
+				case '!':
+					// comment so just ignore
+					break;
+				default:
+					throw new RuntimeException("Compiler couldn't recognize token: ${node.tag}")
 			}
 		}
-	}
-
-	protected void print(String str = '') {
-		buffer << str
-	}
-
-	protected void println(String str = '') {
-		buffer << str + '\n'
 	}
 
 	protected esc(String s) {
 		s.replaceAll('\\\\', "\\\\\\\\")
 			.replaceAll(QUOT_PATTERN, '\\\\"')
+			.replaceAll(SINGLE_QUOT_PATTERN, "\\\\'")
 			.replaceAll(NEWLINE_PATTERN, "\\\\n")
 			.replaceAll(CR_PATTERN, "\\\\r")
 	}
 
 	protected String chooseMethod(String name) {
-		name.indexOf('.') < 0 ? 'f' : 'd'
+		~name.indexOf('.') ? 'd' : 'f'
 	}
 }

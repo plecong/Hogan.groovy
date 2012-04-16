@@ -18,10 +18,10 @@ class MustacheSpec extends Specification {
 		'Interpolation - Multiple Calls': { ++counter },
 		'Escaping': { '>' },
 		// must have arity 2 to trigger higher-order template
-		'Section': { text, render -> text == '{{x}}' ? 'yes' : 'no' },
-		'Section - Expansion': { text, render -> text + '{{planet}}' + text },
-		'Section - Alternate Delimiters': { text, render -> text + '{{planet}} => |planet|' + text },
-		'Section - Multiple Calls': { text, render -> '__' + text + '__'},
+		'Section': { text  -> text == '{{x}}' ? 'yes' : 'no' },
+		'Section - Expansion': { text -> text + '{{planet}}' + text },
+		'Section - Alternate Delimiters': { text -> text + '{{planet}} => |planet|' + text },
+		'Section - Multiple Calls': { text -> '__' + text + '__'},
 		'Inverted Section': { false }
 	]
 
@@ -45,7 +45,7 @@ class MustacheSpec extends Specification {
 			def d = test.data + (LAMBDAS[test.name] ? [lambda: { return LAMBDAS[test.name] } ] : [:])
 			def s = t.render(d, test.partials)
 		then:
-			s == test.expected
+			s == test.expected.toString()
 		where:
 			test << loadSpec('comments')
 	}

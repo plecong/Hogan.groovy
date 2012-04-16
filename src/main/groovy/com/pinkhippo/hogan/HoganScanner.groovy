@@ -12,18 +12,6 @@ class HoganScanner {
 		IN_TAG
 	}
 
-	static tagTypes = [
-		'#': 1,
-		'^': 2,
-		'/': 3,
-		'!': 4,
-		'>': 5,
-		'<': 6,
-		'=': 7,
-		'_v': 8,
-		'{': 9,
-		'&': 10
-	]
 
 	List tokens = []
 	StringBuilder buf = new StringBuilder()
@@ -64,8 +52,9 @@ class HoganScanner {
 				}
 			} else if (state == State.IN_TAG_TYPE) {
 				i += otag.length() - 1
-				boolean tag = tagTypes.containsKey(text[i+1])
-				tagType = tag ? text[i+1] : '_v'
+				boolean tag = Hogan.tags.containsKey(text[i + 1])
+				tagType = tag ? text[i + 1] : '_v'
+
 				if (tagType == '=') {
 					i  = changeDelimiters(text, i)
 					state = State.IN_TEXT
@@ -106,16 +95,16 @@ class HoganScanner {
 		tokens
 	}
 
-	private filterLine(def haveSeenTag, boolean noNewLine = false) {
+	protected filterLine(def haveSeenTag, boolean noNewLine = false) {
 		addBuf()
 
 		if (haveSeenTag && lineIsWhitespace()) {
 			for (int j = lineStart; j < tokens.size(); j++) {
-				if (tokens[j] instanceof String) {
+				if (tokens[j].text) {
 					if (j < (tokens.size() - 1)) {
 						def next = tokens[j+1]
 						if (next.tag == '>') {
-							next.indent = tokens[j]
+							next.indent = tokens[j].text
 						}
 					}
 					tokens.remove(j)
@@ -129,7 +118,7 @@ class HoganScanner {
 		lineStart = tokens.size()
 	}
 
-	private int changeDelimiters(String text, int index) {
+	protected int changeDelimiters(String text, int index) {
 		// TODO: optimize this since this will search the entire
 		// string in memory and eventually we want to be able to
 		// do the scanning from an input stream with look ahead
@@ -146,7 +135,7 @@ class HoganScanner {
 		return closeIndex + close.length() - 1
 	}
 
-	private boolean tagChange(String tag, String text, int index) {
+	protected boolean tagChange(String tag, String text, int index) {
 		if (text[index] != tag[0])
 			return false
 
@@ -158,18 +147,22 @@ class HoganScanner {
 		return true
 	}
 
-	private boolean lineIsWhitespace() {
-		tokens[lineStart..<tokens.size()].every { t ->
-			(t instanceof String) ?
-				t.trim().length() == 0 :
-				tagTypes[t.tag] < tagTypes['_v']
+	protected boolean lineIsWhitespace() {
+		tokens[lineStart..<tokens.size()].every { tok ->
+			Hogan.tags[tok.tag] < Hogan.tags['_v'] || (tok.tag == '_t' && tok.text?.trim().length() == 0)
 		}
 	}
 
-	private addBuf() {
+	protected addBuf() {
 		if (buf.length()) {
-			tokens.add(buf.toString())
+			tokens.add(new HoganToken(tag: '_t', text: buf.toString()))
 			buf = new StringBuilder()
+		}
+	}
+
+	protected cleanTripleStache(token) {
+		if (token.n[-1] == '}') {
+			token.n = token.n[0..<token.n.length()-1]
 		}
 	}
 

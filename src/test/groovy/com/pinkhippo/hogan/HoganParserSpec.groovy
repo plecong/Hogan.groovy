@@ -12,121 +12,116 @@ class HoganParserSpec extends Specification {
 		parser = new HoganParser()
 	}
 
-	def 'parse basic'() {
-		setup:
-			def text = 'test'
-
+	def 'Parse Basic'() {
 		when:
-			def tree = parser.parse(scanner.scan(text))
+		def text = 'test'
+		def tree = parser.parse(scanner.scan(text))
 
 		then:
-			tree.size() == 1
-			tree[0] == 'test'
+		tree.size() == 1
+		tree[0].text == 'test'
 	}
 
-	def 'parse variables'() {
-		setup:
-			def text = 'test{{foo}}test!{{bar}}test!!{{baz}}test!!!'
-
+	def 'Parse Variables'() {
 		when:
-			def tree = parser.parse(scanner.scan(text))
+		def text = 'test{{foo}}test!{{bar}}test!!{{baz}}test!!!'
+		def tree = parser.parse(scanner.scan(text))
 
 		then:
-			tree.size() == 7
-			tree[0] == 'test'
-			tree[2] == 'test!'
-			tree[4] == 'test!!'
-			tree[6] == 'test!!!'
-			tree[1].n == 'foo'
-			tree[3].n == 'bar'
-			tree[5].n =='baz'
+		tree.size() == 7
+		tree[0].text == 'test'
+		tree[2].text == 'test!'
+		tree[4].text == 'test!!'
+		tree[6].text == 'test!!!'
+		tree[1].n == 'foo'
+		tree[3].n == 'bar'
+		tree[5].n =='baz'
 	}
 
-	def 'parse section'() {
-		setup:
-			def text = 'a{{#foo}}b{{/foo}}c'
-
+	def 'Parse Section'() {
 		when:
-			def tree = parser.parse(scanner.scan(text))
+		def text = 'a{{#foo}}b{{/foo}}c'
+		def tree = parser.parse(scanner.scan(text))
 
 		then:
-			tree.size() == 3
-			tree[0] == 'a'
-			tree[1].nodes != null
-			tree[1].nodes.size() == 1
-			tree[1].tag == '#'
-			tree[1].n == 'foo'
-			tree[1].nodes[0] == 'b'
-			tree[2] == 'c'
+		tree.size() == 3
+		tree[0].text == 'a'
+		tree[1].nodes != null
+		tree[1].tag == '#'
+		tree[1].n == 'foo'
+		tree[1].nodes[0].text == 'b'
+		tree[2].text == 'c'
 	}
 
-	def 'parse indexes'() {
-		setup:
-			def text = 'abc{{#foo}}asdf{{bar}}asdf{{/foo}}def'
-
+	def 'Parse Indexes'() {
 		when:
-			def tree = parser.parse(scanner.scan(text))
+		def text = 'abc{{#foo}}asdf{{bar}}asdf{{/foo}}def'
+		def tree = parser.parse(scanner.scan(text))
 
 		then:
-			text.substring(tree[1].i, tree[1].end) == 'asdf{{bar}}asdf'
+		text.substring(tree[1].i, tree[1].end) == 'asdf{{bar}}asdf'
 	}
 
-	def 'parse negative section'() {
-		setup:
-			def text = 'a{{^foo}}b{{/foo}}c'
-
+	def 'Parse Negative Section'() {
 		when:
-			def tree = parser.parse(scanner.scan(text))
+		def text = 'a{{^foo}}b{{/foo}}c'
+		def tree = parser.parse(scanner.scan(text))
 
 		then:
-			tree.size() == 3
-			tree[0] == 'a'
-			tree[1].nodes != null
-			tree[1].nodes.size() == 1
-			tree[1].tag == '^'
-			tree[1].n == 'foo'
-			tree[1].nodes[0] == 'b'
-			tree[2] == 'c'
+		tree.size() == 3
+		tree[0].text == 'a'
+		tree[1].nodes != null
+		tree[1].tag == '^'
+		tree[1].n == 'foo'
+		tree[1].nodes[0].text == 'b'
+		tree[2].text == 'c'
 	}
 
-	def 'parse nested sections'() {
-		setup:
-			def text = '{{#bar}}{{#foo}}c{{/foo}}{{/bar}}'
-
+	def 'Parse Nested Sections'() {
 		when:
-			def tree = parser.parse(scanner.scan(text))
+		def text = '{{#bar}}{{#foo}}c{{/foo}}{{/bar}}'
+		def tree = parser.parse(scanner.scan(text))
 
 		then:
-			tree.size() == 1
-			tree[0].tag == '#'
-			tree[0].n == 'bar'
-			tree[0].nodes.size() == 1
-			tree[0].nodes[0].n == 'foo'
-			tree[0].nodes[0].nodes[0] == 'c'
+		tree.size() == 1
+		tree[0].tag == '#'
+		tree[0].n == 'bar'
+		tree[0].nodes.size() == 1
+		tree[0].nodes[0].n == 'foo'
+		tree[0].nodes[0].nodes[0].text == 'c'
 	}
 
-	def 'parse missing closing tag'() {
-		setup:
-			def text = 'a{{#foo}}bc'
-
+	def 'Missing Closing Tag'() {
 		when:
-			def tree = parser.parse(scanner.scan(text))
+		def text = 'a{{#foo}}bc'
+		def tree = parser.parse(scanner.scan(text))
 
 		then:
-			def e = thrown(ParseException)
-			e.message == 'Missing closing tag: foo'
+		def e = thrown(ParseException)
+		e.message == 'Missing closing tag: foo'
 	}
 
-	def 'parse bad nesting'() {
-		setup:
-			def text = 'a{{#foo}}{{#bar}}b{{/foo}}{{/bar}}c'
-
+	def 'Bad Nesting'() {
 		when:
-			def tree = parser.parse(scanner.scan(text))
+		def text = 'a{{#foo}}{{#bar}}b{{/foo}}{{/bar}}c'
+		def tree = parser.parse(scanner.scan(text))
 
 		then:
-			def e = thrown(ParseException)
-			e.message == 'Nesting error: bar vs. foo'
+		def e = thrown(ParseException)
+		e.message == 'Nesting error: bar vs. foo'
+	}
+
+	/* Template Inheritance */
+
+	def 'Parse a $ tag'() {
+		when:
+		def text = '{{$title}}Default title{{/title}}'
+		def tree = parser.parse(scanner.scan(text))
+
+		then:
+		tree[0].tag == '$'
+		tree.size() == 1
+		tree[0].nodes.size() == 1
 	}
 
 }

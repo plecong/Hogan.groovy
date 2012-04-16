@@ -7,6 +7,7 @@ class GroovyHoganCompiler extends HoganCompiler {
 	ClassLoader classLoader
 
 	static AtomicInteger counter = new AtomicInteger()
+	int ctxcnt = 0
 
 	static importLines = [
 		'com.pinkhippo.hogan.HoganCompiler',
@@ -17,17 +18,28 @@ class GroovyHoganCompiler extends HoganCompiler {
 		classLoader = new GroovyClassLoader(Thread.currentThread().getContextClassLoader());
 	}
 
+	def createBuffer() { new HoganBuffer() }
+
 	HoganPage compile(String source, Map options = [:]) {
 		def scanner = new HoganScanner()
 		def parser = new HoganParser()
 
 		def tokens = scanner.scan(source, options.delimiters)
-		def tree = parser.parse(tokens)
+		def tree = parser.parse(tokens, source, options)
 		compile(tree, source, options)
 	}
 
 	HoganPage compile(List tree, String source, Map options = [:]) {
-		def generated = generate(tree)
+		def generated = generate(tree, source, options)
+
+		if (options.keepGenerated) {
+			def path = (options.keepGenerated instanceof String) ? options.keepGenerated : ''
+			def dir = new File(path)
+			dir.mkdirs()
+			def file = new File(dir, "hogan${System.nanoTime()}_${counter.incrementAndGet()}.groovy")
+			file.text = generated
+		}
+
 		def clazz = classLoader.parseClass(generated)
 		def args = new Object[3]
 		args[0] = source
@@ -38,67 +50,135 @@ class GroovyHoganCompiler extends HoganCompiler {
 		page
 	}
 
-	void writeImports() {
+	void writeImports(writer) {
 		importLines.each {
-			println("import ${it}")
+			writer.println("import ${it}")
 		}
-		println()
+		writer.println()
 	}
 
-	void writeCode(tree) {
-		writeImports()
+	def stringify(Map codeObj, String text, Map options) {
+		def writer = new StringWriter()
+		def name = options.name ?: "hogan${System.nanoTime()}_${counter.incrementAndGet()}"
 
-		def name = "hogan${System.nanoTime()}_${counter.incrementAndGet()}"
+		writeImports(writer)
+		writer.println("class ${name} extends HoganPage {")
 
+		// partials variable, which is just a map of symbol name, to name of partial
+		writer.print('Map getCodeData() { [')
+		writer.print(stringifyPartials(codeObj))
+		writer.println('] }')
 
-		print('class ')
-		print(name)
-		println(' extends HoganPage {')
-		println("public ${name}() { super(null, null); }")
-		println("public ${name}(String s, HoganCompiler c, Map o = [:]) { super(s, c, o); }")
-		println('String r(Deque c, Map p, String i) {')
-		println('def _ = this')
-		println('_.b(i ?: "")')
-		walk(tree)
-		println()
-		println('return _.fl()')
-		println('}')
-		println('}')
+		// constructors
+		writer.println("public ${name}() { super(null, null); }")
+		writer.println("public ${name}(String s, HoganCompiler c, Map o = [:], Map p = [:], Map u = [:]) { super(s, c, o, p, u); }")
+
+		// main rendering method
+		writer.println('String r(Deque c, Map p, String i) {')
+		wrapMain(writer, codeObj.code)
+		writer.println('}')
+
+		writer.println('}')
+		writer.toString()
 	}
 
-	void section(nodes, id, method, start, end, tags) {
-		def escId = esc(id)
-		println("if(_.s(_.${method}('${escId}',c,p,true),c,p,false,${start},${end},'${tags}')) {")
-		println('_.rs(c,p) { ')
-		walk(nodes)
-		println('}')
-		println('c.pop()')
-		println('}')
+	private void wrapMain(Writer writer, def code) {
+		writer.println('def t=this;')
+		writer.println('t.b(i ?: "");')
+		writer.println(code)
+		writer.println('return t.fl();')
 	}
 
-	void invertedSection(nodes, id, method) {
-		def escId = esc(id)
-		println("if(!_.s(_.${method}('${escId}',c,p,true),c,p,true,0,0,'')) {")
-		walk(nodes)
-		println('}')
+	// #
+	void section(node, context) {
+		def method = chooseMethod(node.n)
+		def escId = esc(node.n)
+		def start = node.i
+		def end = node.end
+		def tags = "${node.otag} ${node.ctag}"
+
+		context.code << "if(t.s(t.${method}('${escId}',c,p,true),c,p,false,${start},${end},'${tags}')){"
+		context.code << 't.rs(c,p){'
+		walk(node.nodes, context)
+		context.code << '};c.pop();};'
 	}
 
-	void partial(tok) {
-		def escN = esc(tok.n)
-		println("_.b(_.rp('${escN}',c,p,'${tok.indent ?: ''}'));")
+	// ^
+	void invertedSection(node, context) {
+		def method = chooseMethod(node.n)
+		def escId = esc(node.n)
+
+		context.code << "if(!t.s(t.${method}('${escId}',c,p,true),c,p,true,0,0,'')){";
+		walk(node.nodes, context);
+		context.code << '};';
 	}
 
-	void tripleStache(id, method) {
-		def escId = esc(id)
-		println("_.b(_.t(_.${method}('${escId}',c,p,false)))")
+	// >
+	void partial(node, context) {
+		createPartial(node, context)
 	}
 
-	void variable(id, method) {
-		def escId = esc(id)
-		println("_.b(_.v(_.${method}('${escId}',c,p,false)))")
+	// <
+	void include(node, context) {
+		def ctx = [partials: [:], code: new StringBuilder(), subs: [:], inPartial: true, serialNo: context.serialNo];
+		walk(node.nodes, ctx);
+		def template = context.partials[createPartial(node, context)]
+		template.subs = ctx.subs
+		template.partials = ctx.partials
 	}
 
-	void text(str) {
-		println("_.b(${str})")
+	// $
+	void includeSub(node, context) {
+		def ctx = [subs: [:], code: new StringBuilder(), partials: context.partials, prefix: node.n, serialNo: context.serialNo]
+		walk(node.nodes, ctx)
+		context.subs[node.n] = ctx.code
+		if (!context.inPartial) {
+			context.code << 't.sub("' + esc(node.n) + '",c,p);'
+		}
+	}
+
+	// \n
+	void newLine(node, context) {
+		context.code << writeStr("'\\n'" + (node.last ? '' : ' + i'))
+	}
+
+	// _v
+	void variable(node, context) {
+		context.code << 't.b(t.v(t.' + chooseMethod(node.n) + '("' + esc(node.n) + '",c,p,false)));'
+	}
+
+	// _t
+	void text(node, context) {
+		context.code << writeStr('\'' + esc(node.text) + '\'')
+	}
+
+	// & and {
+	void tripleStache(node, context) {
+		context.code << 't.b(t.t(t.' + chooseMethod(node.n) + '("' + esc(node.n) + '",c,p,false)));'
+	}
+
+	private String createPartial(node, context) {
+		String prefix = '<' + (context.prefix ?: '')
+		String sym = prefix + node.n + context.serialNo++
+		context.partials[sym] = [name: node.n, partials: [:], subs: [:]]
+		context.code << 't.b(t.rp("' +  esc(sym) + '",c,p,"' + (node.indent ?: '') + '"));'
+		sym
+	}
+
+	private String stringifyPartials(Map obj) {
+		def partialLines = obj.partials.collect { key, val ->
+			"'${esc(key)}': [name: '${esc(val.name)}', ${stringifyPartials(val)}]"
+		}
+		def partialLinesCode = partialLines ? partialLines.join(',') : ':'
+		return "partials: [${partialLinesCode}], subs: " + stringifyFunctions(obj.subs)
+	}
+
+	private String stringifyFunctions(Map obj) {
+		def functionLines = obj.collect { key, val -> "'${esc(key)}': { c, p, t -> ${val} }" }
+		return functionLines ? '[' + functionLines.join(',') + ']' : '[:]'
+	}
+
+	private String writeStr(String str) {
+		"t.b(${str});"
 	}
 }

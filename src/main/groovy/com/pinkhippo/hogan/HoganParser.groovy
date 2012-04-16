@@ -1,23 +1,42 @@
 package com.pinkhippo.hogan
 
+/**
+ * Parses the stream of <code>HoganToken</code>s into a tree that will
+ * be used by the <code>HoganCompiler</code> to generate the compiled
+ * page. This mostly consists of grouping the tokens inside of a section
+ * underneath the token representing the opener of the section.
+ *
+ * @author plecong
+ */
 class HoganParser {
+
+	static allowedInSuper = [
+		'_t', '\n', '$', '/'
+	]
+
 	List parse(List tokens, String text = null, Map options = [:]) {
 		buildTree(new ArrayDeque(tokens), '', new ArrayDeque(), options.sectionTags ?: [])
 	}
 
-	List buildTree(Queue tokens, String kind, Queue stack, Collection customTags) {
+	List buildTree(Deque tokens, String kind, Deque stack, Collection customTags) {
 		def instructions = []
+		def tail = null
 		def token = null
 
-		while (!tokens.empty) {
+		tail = stack.peekLast()
+		boolean checkSuper = (tail?.tag == '<')
+
+		while (tokens) {
 			token = tokens.pop()
 
-			if (!(token instanceof String) && (token.tag == '#' || token.tag == '^' || isOpener(token, customTags))) {
+			if (checkSuper && !(token.tag in allowedInSuper)) {
+				throw new ParseException('Illegal content in < super tag.', token)
+			}
+
+			if (Hogan.tags[token.tag] <= Hogan.tags['$'] || isOpener(token, customTags)) {
 				stack.push(token)
 				token.nodes = buildTree(tokens, token.tag, stack, customTags)
-				instructions.add(token)
-
-			} else if (!(token instanceof String) && token.tag == '/') {
+			} else if (token.tag == '/') {
 				if (stack.empty) {
 					throw new ParseException('Closing tag without opener: ' + token.n, token)
 				}
@@ -30,9 +49,11 @@ class HoganParser {
 
 				opener.end = token.i
 				return instructions
-			} else {
-				instructions.add(token)
+			} else if (token.tag == '\n') {
+				token.last = tokens.empty || tokens.peek().tag == '\n'
 			}
+
+			instructions.add(token)
 		}
 
 		if (!stack.empty) {
