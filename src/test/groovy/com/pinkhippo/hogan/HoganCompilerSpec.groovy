@@ -797,7 +797,7 @@ class HoganCompilerSpec extends Specification {
 		]
 	]
 
-	@Unroll("#{test.name}: #{test.desc}")
+	@Unroll("#name: #desc")
 	def 'shared tests'() {
 		when:
 			def t = Hogan.compile(test.text, test.options ?: [:])
@@ -806,6 +806,8 @@ class HoganCompilerSpec extends Specification {
 			s == test.expected
 		where:
 			test << tests
+			name = test.name
+			desc = test.desc
 	}
 
 	def 'Stringified templates survive a round trip'() {
