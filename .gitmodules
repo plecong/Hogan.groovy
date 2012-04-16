@@ -1,3 +1,6 @@
 [submodule "mustache-spec"]
 	path = mustache-spec
 	url = https://github.com/mustache/spec.git
+[submodule "hogan.js"]
+	path = hogan.js
+	url = https://github.com/twitter/hogan.js.git

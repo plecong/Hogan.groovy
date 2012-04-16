@@ -189,7 +189,7 @@ class GroovyHoganCompiler extends HoganCompiler {
 	}
 
 	private String stringifyFunctions(Map obj) {
-		def functionLines = obj.collect { key, val -> "'${esc(key)}': { c, p, t -> ${val} }" }
+		def functionLines = obj.collect { key, val -> "'${esc(key)}': { Deque c, Map p, HoganPage t -> ${val} }" }
 		return functionLines ? '[' + functionLines.join(',') + ']' : '[:]'
 	}
 

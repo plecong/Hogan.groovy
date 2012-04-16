@@ -43,6 +43,8 @@ abstract class HoganCompiler {
 	// & and {
 	abstract void tripleStache(node, context)
 
+	abstract HoganPage compile(String source, Map options)
+
 	String generate(List tree, String source, Map options = [:]) {
 		def context = [code: createBuffer(), subs: [:], partials: [:], serialNo: 0]
 		walk(tree, context)

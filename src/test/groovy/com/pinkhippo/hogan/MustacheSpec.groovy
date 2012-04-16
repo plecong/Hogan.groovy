@@ -53,7 +53,7 @@ class MustacheSpec extends Specification {
 		tests
 	}
 
-	@Unroll({"${test.name}: ${test.desc}"})
+	@Unroll("#{test.name}: #{test.desc}")
 	def 'mustache spec'() {
 		when:
 			def t = Hogan.compile(test.template)

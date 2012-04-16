@@ -2,6 +2,7 @@ apply plugin: 'groovy'
 
 repositories {
     mavenCentral()
+    maven { url "http://groovypp.artifactoryonline.com/groovypp/libs-releases-local" }
 }
 
 sourceSets {
@@ -13,12 +14,14 @@ sourceSets {
 dependencies {
     groovy 'org.codehaus.groovy:groovy:1.8.6'
 
-    testCompile('org.spockframework:spock-core:0.5-groovy-1.8') {
+    testCompile('org.spockframework:spock-core:0.6-groovy-1.8') {
     	exclude module: 'groovy-all'
     }
 
     perfTestCompile 'com.googlecode.gbench:gbench:0.3.0-groovy-1.8'
     perfTestCompile 'com.samskivert:jmustache:1.5'
+    perfTestCompile 'org.mozilla:rhino:1.7R3'
+
     perfTestCompile sourceSets.main.output
     perfTestCompile configurations.testCompile
     perfTestCompile sourceSets.test.output
@@ -32,4 +35,5 @@ task wrapper(type: Wrapper) {
 task performanceTest(type: JavaExec, dependsOn: classes) {
 	classpath sourceSets.perfTest.runtimeClasspath
 	main = 'Simple'
+	jvmArgs = ['-server']
 }

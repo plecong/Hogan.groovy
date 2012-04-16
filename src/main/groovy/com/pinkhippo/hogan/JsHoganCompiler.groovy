@@ -17,6 +17,10 @@ package com.pinkhippo.hogan
 
 class JsHoganCompiler extends HoganCompiler {
 
+	HoganPage compile(String source, Map options) {
+		throw new UnsupportedOperationException('Cannot compile yet')
+	}
+
 	def stringify(Map codeObj, String text, Map options) {
 		new StringBuilder() << "{code: function (c,p,i) { " << Hogan.wrapMain(codeObj.code) << " }," << stringifyPartials(codeObj) << "}"
 	}

@@ -33,7 +33,7 @@ From [Twitter's](http://github.com/twitter) [Hogan](http://github.com/twitter/ho
 This project ports the parsing and scanning functionality to Groovy and implements
 a Groovy code generation phase. This means that the compiled templates are Groovy
 classes that can be generated ahead of time and compiled. Furthermore, because it
-is Groovy, you can use Groovy closures as the lambdas.
+is Groovy, you can use [Groovy closures](http://groovy.codehaus.org/Closures) as the lambdas.
 
 ```groovy
 def data = [
@@ -56,6 +56,24 @@ precompilation without having to load Rhino.
 The long term vision is that the Groovy compiled templates can be used on the server
 and the exact same Mustache templates can be compiled into JavaScript and included
 into source page for client-side template generation.
+
+
+## Motivation
+
+Mostly, because it could be done. There are other alternatives for compiling Mustache templates on the JVM:
+
+* [samskivert's](http://github.com/samskivert) [jmustache](http://github.com/samskivert/jmustache)
+* [spullara's](http://github.com/spullara) [mustache.java](http://github.com/spullara/mustache.java)
+
+These libraries being implemented in Java only are going to be much faster. However, Hogan.groovy
+is worth using if:
+
+* You're using Groovy and would like to use Groovy closures as Mustache lambdas
+* You're already using Hogan.js on the client-side and want the exact same features
+during server-side rendering including:
+  * Recursive templates
+  * Template inheritance
+
 
 ## Compilation options
 

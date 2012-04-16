@@ -110,7 +110,7 @@ class HoganCompilerSpec extends Specification {
 			def text = 'array: {{foo}}'
 		when:
 			def t = Hogan.compile(text)
-			def s = t.render([foo: ['a', 'b', 'c'].toArray()])
+			def s = t.render([foo: ['a', 'b', 'c']])
 		then:
 			'array: [a, b, c]' == s
 	}
@@ -755,7 +755,8 @@ class HoganCompilerSpec extends Specification {
 			text: '{{#filter}}foo {{bar}}{{/filter}}',
 			data: [ filter: { return { it.toUpperCase() + '{{bar}}'} }, bar: 'bar' ],
 			partials: [recursion: "{{name}}{{#kids}}{{>recursion}}{{/kids}}"],
-			expected: 'FOO bar'
+			expected: 'FOO bar',
+			excludePerf: true
 		],[
 			name: 'Shoot Out Complex',
 			desc: 'Shootout Complex compiled correctly',
@@ -791,11 +792,12 @@ class HoganCompilerSpec extends Specification {
 					items.lenght == 0
 				}
 			],
-			expected: '<h1>Colors</h1><ul><li><strong>red</strong></li><li><a href=\"#Green\">green</a></li><li><a href=\"#Blue\">blue</a></li></ul>'
+			expected: '<h1>Colors</h1><ul><li><strong>red</strong></li><li><a href=\"#Green\">green</a></li><li><a href=\"#Blue\">blue</a></li></ul>',
+			excludePerf: true
 		]
 	]
 
-	@Unroll({"${test.name}: ${test.desc}"})
+	@Unroll("#{test.name}: #{test.desc}")
 	def 'shared tests'() {
 		when:
 			def t = Hogan.compile(test.text, test.options ?: [:])
