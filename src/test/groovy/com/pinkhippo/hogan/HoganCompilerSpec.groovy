@@ -484,6 +484,13 @@ class HoganCompilerSpec extends Specification {
 			desc: 'render correct',
 			text: '\n{{#section}}\n {{data}}\n |data|\n{{/section}}x\n\n{{= | | =}}\n|#section|\n {{data}}\n |data|\n|/section|',
 			data: [section: true, data: 'I got interpolated.'],
+			expected: '\n I got interpolated.\n |data|\nx\n\n {{data}}\n I got interpolated.\n',
+			excludePerf: true
+		],[
+			name: 'New Line Between Delimiter Changes JMustache Compatible',
+			desc: 'render correct',
+			text: '\n{{#section}}\n {{data}}\n |data|\n{{/section}}x\n\n{{=| |=}}\n|#section|\n {{data}}\n |data|\n|/section|',
+			data: [section: true, data: 'I got interpolated.'],
 			expected: '\n I got interpolated.\n |data|\nx\n\n {{data}}\n I got interpolated.\n'
 		],[
 			name: 'Mustache JS Apostrophe',
@@ -697,6 +704,18 @@ class HoganCompilerSpec extends Specification {
 				[name: "Curly", count: 2]
 			]],
 			partials: [replace: Hogan.compile(" Hello {{name}}! You have {{count}} new messages.")],
+			expected: ' Hello Moe! You have 15 new messages. Hello Larry! You have 5 new messages. Hello Curly! You have 2 new messages.',
+			excludePerf: true
+		],[
+			name: 'Shoot Out Partial string',
+			desc: 'Shootout Partial compiled correctly',
+			text: '{{#peeps}}{{>replace}}{{/peeps}}',
+			data: [ peeps: [
+				[name: "Moe", count: 15],
+				[name: "Larry", count: 5],
+				[name: "Curly", count: 2]
+			]],
+			partials: [replace: " Hello {{name}}! You have {{count}} new messages."],
 			expected: ' Hello Moe! You have 15 new messages. Hello Larry! You have 5 new messages. Hello Curly! You have 2 new messages.'
 		],[
 			name: 'Shoot Out Recurse',
@@ -712,7 +731,8 @@ class HoganCompilerSpec extends Specification {
 				  ]
 			]],
 			partials: [recursion: Hogan.compile("{{name}}{{#kids}}{{>recursion}}{{/kids}}")],
-			expected: '11.11.1.1'
+			expected: '11.11.1.1',
+			excludePerf: true
 		],[
 			name: 'Shoot Out Recurse string partial',
 			desc: 'Shootout Recurse string compiled correctly',
@@ -727,7 +747,8 @@ class HoganCompilerSpec extends Specification {
 				  ]
 			]],
 			partials: [recursion: "{{name}}{{#kids}}{{>recursion}}{{/kids}}"],
-			expected: '11.11.1.1'
+			expected: '11.11.1.1',
+			excludePerf: true
 		],[
 			name: 'Shoot Out Filter',
 			desc: 'Shootout Filter compiled correctly',
