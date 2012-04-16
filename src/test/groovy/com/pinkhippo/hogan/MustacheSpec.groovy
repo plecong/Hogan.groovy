@@ -25,7 +25,7 @@ class MustacheSpec extends Specification {
 		'Inverted Section': { false }
 	]
 
-	def loadSpec(String name) {
+	def loadSpecs() {
 		def tests = []
 
 		new File('mustache-spec/specs').eachFile { file ->
@@ -47,7 +47,7 @@ class MustacheSpec extends Specification {
 		then:
 			s == test.expected.toString()
 		where:
-			test << loadSpec('comments')
+			test << loadSpecs()
 	}
 
 }
