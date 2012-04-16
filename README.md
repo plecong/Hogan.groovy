@@ -15,7 +15,7 @@ Hogan compiles templates to `HoganPage` objects, which have a render method.
 ```groovy
 def data = [ screenName: 'plecong' ]
 
-def template = Hogan.compile('Follow @{{screenName}}.'')
+def template = Hogan.compile('Follow @{{screenName}}.)
 def output = template.render(data)
 
 // prints "Follow @plecong."
