@@ -796,4 +796,20 @@ class HoganCompilerSpec extends Specification {
 	def 'Default Render Impl'() {
 		// can't do because can't instantiate abstract class
 	}
+
+	def 'Lambda From Mustache Spec'() {
+		when:
+		def data = [
+			name: 'Willy',
+			wrapped: {
+				return { text -> "<b>${text}</b>" }
+			}
+		]
+
+		def template = Hogan.compile('{{#wrapped}}{{name}} is awesome.{{/wrapped}}')
+		def s = template.render(data)
+
+		then:
+		s == '<b>Willy is awesome.</b>'
+	}
 }

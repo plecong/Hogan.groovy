@@ -9,7 +9,7 @@ task wrapper(type: Wrapper) {
 }
 
 dependencies {
-    groovy 'org.codehaus.groovy:groovy:1.8.5'
+    groovy 'org.codehaus.groovy:groovy:1.8.6'
     testCompile('org.spockframework:spock-core:0.5-groovy-1.8') {
     	exclude module: 'groovy-all'
     }

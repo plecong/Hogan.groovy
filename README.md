@@ -32,7 +32,22 @@ From [Twitter's](http://github.com/twitter) [Hogan](http://github.com/twitter/ho
 
 This project ports the parsing and scanning functionality to Groovy and implements
 a Groovy code generation phase. This means that the compiled templates are Groovy
-classes that can be generated ahead of time and compiled.
+classes that can be generated ahead of time and compiled. Furthermore, because it
+is Groovy, you can use Groovy closures as the lambdas.
+
+```groovy
+def data = [
+	name: 'Willy',
+	wrapped: {
+		return { text -> "<b>${text}</b>" }
+	}
+]
+
+def template = Hogan.compile('{{#wrapped}}{{name}} is awesome.{{/wrapped}}')
+def expected = '<b>Willy is awesome.</b>'
+
+assert expected == template.render(data)
+```
 
 There is also an experimental (i.e. untested) JavaScript code generation that should
 output identical code to the Hogan.js method. This will allow for server-side
