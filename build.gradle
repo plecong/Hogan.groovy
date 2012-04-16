@@ -6,16 +6,16 @@ repositories {
 }
 
 sourceSets {
-	perfTest {
-		groovy.srcDirs = ['src/perf/groovy']
-	}
+    perfTest {
+        groovy.srcDirs = ['src/perf/groovy']
+    }
 }
 
 dependencies {
     groovy 'org.codehaus.groovy:groovy:1.8.6'
 
     testCompile('org.spockframework:spock-core:0.6-groovy-1.8') {
-    	exclude module: 'groovy-all'
+        exclude module: 'groovy-all'
     }
 
     perfTestCompile 'com.googlecode.gbench:gbench:0.3.0-groovy-1.8'
@@ -25,7 +25,7 @@ dependencies {
     perfTestCompile sourceSets.main.output
     perfTestCompile configurations.testCompile
     perfTestCompile sourceSets.test.output
-	perfTestRuntime configurations.testRuntime
+    perfTestRuntime configurations.testRuntime
 }
 
 task wrapper(type: Wrapper) {
@@ -33,7 +33,7 @@ task wrapper(type: Wrapper) {
 }
 
 task performanceTest(type: JavaExec, dependsOn: classes) {
-	classpath sourceSets.perfTest.runtimeClasspath
-	main = 'Simple'
-	jvmArgs = ['-server']
+    classpath sourceSets.perfTest.runtimeClasspath
+    main = 'Simple'
+    jvmArgs = ['-server']
 }
