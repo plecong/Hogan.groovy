@@ -13,7 +13,7 @@
  *  limitations under the License.
  */
 
-package com.pinkhippo.hogan
+package com.github.plecong.hogan
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -25,8 +25,8 @@ class GroovyHoganCompiler extends HoganCompiler {
 	int ctxcnt = 0
 
 	static importLines = [
-		'com.pinkhippo.hogan.HoganCompiler',
-		'com.pinkhippo.hogan.HoganPage'
+		'com.github.plecong.hogan.HoganCompiler',
+		'com.github.plecong.hogan.HoganPage'
 	]
 
 	public GroovyHoganCompiler() {

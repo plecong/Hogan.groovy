@@ -13,12 +13,17 @@
  *  limitations under the License.
  */
 
-package com.pinkhippo.hogan
+package com.github.plecong.hogan
 
-class ParseException extends RuntimeException {
-	def token
-	ParseException(String message, token = null) {
-		super(message)
-		this.token = token
+class HoganBuffer implements CharSequence {
+	@Delegate StringBuffer buffer = new StringBuffer()
+
+	StringBuffer leftShift(Object value) {
+		buffer << value
+		buffer << '\n'
+	}
+
+	String toString() {
+		buffer.toString()
 	}
 }

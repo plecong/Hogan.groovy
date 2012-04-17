@@ -1,4 +1,8 @@
 apply plugin: 'groovy'
+apply plugin: 'maven'
+
+group = 'com.github.plecong'
+version = '2.0'
 
 repositories {
     mavenCentral()

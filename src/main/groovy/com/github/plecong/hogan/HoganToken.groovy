@@ -13,17 +13,21 @@
  *  limitations under the License.
  */
 
-package com.pinkhippo.hogan
+package com.github.plecong.hogan
 
-class HoganBuffer implements CharSequence {
-	@Delegate StringBuffer buffer = new StringBuffer()
+import groovy.transform.Canonical
 
-	StringBuffer leftShift(Object value) {
-		buffer << value
-		buffer << '\n'
-	}
-
-	String toString() {
-		buffer.toString()
-	}
+@Canonical
+class HoganToken {
+	CharSequence n
+	def tag
+	def i
+	def indent
+	String text
+	String otag
+	String ctag
+	def nodes
+	def end
+	boolean last
 }
+

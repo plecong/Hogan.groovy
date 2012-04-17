@@ -1,4 +1,4 @@
-package com.pinkhippo.hogan
+package com.github.plecong.hogan
 
 import java.util.regex.Pattern
 

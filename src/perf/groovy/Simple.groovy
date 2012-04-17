@@ -1,5 +1,5 @@
 import gbench.*
-import com.pinkhippo.hogan.*
+import com.github.plecong.hogan.*
 import com.samskivert.mustache.*
 
 // essentially find all scripts that don't have closures in the context

@@ -13,7 +13,7 @@
  *  limitations under the License.
  */
 
-package com.pinkhippo.hogan
+package com.github.plecong.hogan
 
 /**
  * Parses the stream of <code>HoganToken</code>s into a tree that will
