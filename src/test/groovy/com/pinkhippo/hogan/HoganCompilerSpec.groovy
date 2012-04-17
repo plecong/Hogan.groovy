@@ -32,7 +32,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Single Char Delimiter'() {
 		when:
 			def text = '({{foo}} {{=[ ]=}}[text])'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo: 'bar', text: 'It worked!'])
 		then:
 			'(bar It worked!)' == s
@@ -41,7 +41,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Set Delimiter With Whitespace'() {
 		when:
 			def text = '{{= | | =}}|foo|'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo: 'bar'])
 		then:
 			'bar' == s
@@ -50,7 +50,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Render With Whitespace Around Triple Stache'() {
 		when:
 			def text = '  {{{ string }}}\n'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([string: '---'])
 
 		then:
@@ -60,7 +60,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Render With Whitespace Around Ampersand'() {
 		when:
 			def text = '  {{& string }}\n'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([string: '---'])
 		then:
 			'  ---\n' == s
@@ -69,7 +69,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Multiple Variables'() {
 		when:
 			def text = 'test {{foo}} test {{bar}} test {{baz}} test {{foo}} test'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo:'42', bar: '43', baz: '44'])
 		then:
 			'test 42 test 43 test 44 test 42 test' == s
@@ -78,7 +78,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Number Values'() {
 		when:
 			def text = 'integer: {{foo}} float: {{bar}} negative: {{baz}}'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo: 42, bar: 42.42, baz: -42])
 		then:
 			'integer: 42 float: 42.42 negative: -42' == s
@@ -87,7 +87,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Object Render'() {
 		when:
 			def text = 'object: {{foo}}'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def o = new Object()
 			def s = t.render([foo: o])
 		then:
@@ -97,7 +97,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Object To String Render'() {
 		when:
 			def text = 'object: {{foo}}'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo: new Object() {
 				public String toString() { 'yo!' }
 			}])
@@ -109,7 +109,7 @@ class HoganCompilerSpec extends Specification {
 		setup:
 			def text = 'array: {{foo}}'
 		when:
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo: ['a', 'b', 'c']])
 		then:
 			'array: [a, b, c]' == s
@@ -118,7 +118,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Escaping'() {
 		when:
 			def text = '{{foo}}'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo: "< > <div> \' \" &"])
 		then:
 			'&lt; &gt; &lt;div&gt; &#39; &quot; &amp;' == s
@@ -127,7 +127,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Escaping Chars'() {
 		when:
 			def text = '{{foo}}'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo: theChar.key + ' just me'])
 		then:
 			theChar.value + ' just me' == s
@@ -144,7 +144,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Mustach Injection'() {
 		when:
 			def text = '{{foo}}'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo: "{{{<42}}}"])
 		then:
 			'{{{&lt;42}}}' == s
@@ -153,7 +153,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Triple Stache'() {
 		when:
 			def text = '{{{foo}}}'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo: "< > <div> \' \" &"])
 		then:
 			'< > <div> \' \" &' == s
@@ -162,7 +162,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Amp No Escaping'() {
 		when:
 			def text = '{{&foo}}'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo: "< > <div> \' \" &"])
 		then:
 			'< > <div> \' \" &' == s
@@ -171,10 +171,10 @@ class HoganCompilerSpec extends Specification {
 	def 'Partial Basic'() {
 		setup:
 			def partialText = 'this is text from the partial--the magic number {{foo}} is from a variable'
-			def p = Hogan.compile(partialText)
+			def p = compiler.compile(partialText)
 
 			def text = 'This template contains a partial ({{>testPartial}}).'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 		when:
 			def s = t.render([foo: 42], [testPartial: p])
 		then:
@@ -184,13 +184,13 @@ class HoganCompilerSpec extends Specification {
 	def 'Nested Partials'() {
 		setup:
 			def partialText = 'this is text from the partial--the magic number {{foo}} is from a variable'
-			def p = Hogan.compile(partialText)
+			def p = compiler.compile(partialText)
 
 			def partialText2 = 'This template contains a partial ({{>testPartial}}).'
-			def p2 = Hogan.compile(partialText2)
+			def p2 = compiler.compile(partialText2)
 
 			def text = 'This template contains a partial that contains a partial [{{>testPartial2}}].'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 		when:
 			def s = t.render([foo: 42], [testPartial: p, testPartial2: p2])
 		then:
@@ -200,7 +200,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Negative Section'() {
 		when:
 			def text = 'This template {{^foo}}BOO {{/foo}}contains an inverted section.'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 		then:
 			'This template BOO contains an inverted section.' == t.render()
 			'This template BOO contains an inverted section.' == t.render([foo: []])
@@ -214,7 +214,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Section Elision'() {
 		when:
 			def text = 'This template {{#foo}}BOO {{/foo}}contains a section.'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 		then:
 			'This template contains a section.' == t.render()
 			'This template contains a section.' == t.render([foo: []])
@@ -228,7 +228,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Section Map Context'() {
 		when:
 			def text = 'This template {{#foo}}{{bar}} {{/foo}}contains a section.'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo:[bar: 42]])
 		then:
 			s == "This template 42 contains a section."
@@ -237,7 +237,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Section Array Context'() {
 		when:
 			def text = 'This template {{#foo}}{{bar}} {{/foo}}contains a section.'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo: [[bar: 42], [bar: 43], [bar: 44]]])
 		then:
 			s == "This template 42 43 44 contains a section."
@@ -246,7 +246,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Falsy Variable No Render'() {
 		when:
 			def text = 'I ({{cannot}}) be seen!'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render()
 		then:
 			s == "I () be seen!"
@@ -255,7 +255,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Null Return Value From Lambda'() {
 		when:
 			def text = 'abc{{foo}}def'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo: { null }])
 		then:
 			s == "abcdef"
@@ -266,7 +266,7 @@ class HoganCompilerSpec extends Specification {
 		def text = "Test {{_//|__foo}}bar{{/foo}}"
 		def options = [sectionTags: [ [o: '_//|__foo', c: 'foo'] ]]
 		def tree = parser.parse(scanner.scan(text), text, options)
-		def t = Hogan.compile(text, options)
+		def t = compiler.compile(text, options)
 		def s = t.render(['_//|__foo': true])
 
 		then:
@@ -291,7 +291,7 @@ class HoganCompilerSpec extends Specification {
 		setup:
 			def text = "Test{{_foo}}bar{{/foo}}"
 			def options = [sectionTags:[[o:'_foo', c:'foo'], [o:'_baz', c:'baz']]]
-			def t = Hogan.compile(text, options)
+			def t = compiler.compile(text, options)
 			def context = [
 				'_baz': true,
 				'_foo': { return { s -> "{{_baz}}" + s + "{{/baz}}qux" } }
@@ -306,7 +306,7 @@ class HoganCompilerSpec extends Specification {
 		setup:
 			def text = "Test{{foo}}"
 			def options = [sectionTags:[[o:'_baz', c:'baz']]]
-			def t = Hogan.compile(text, options)
+			def t = compiler.compile(text, options)
 			def context = [
 				'_baz': true,
 				'foo': { return { "{{_baz}}abcdef{{/baz}}" } }
@@ -321,7 +321,7 @@ class HoganCompilerSpec extends Specification {
 		setup:
 			def text = "Test{{foo}}"
 			def options = [disableLambda: true];
-			def t = Hogan.compile(text, options)
+			def t = compiler.compile(text, options)
 			def context = [
 				'baz': true,
 				'foo': { return { "{{#baz}}abcdef{{/baz}}" } }
@@ -337,7 +337,7 @@ class HoganCompilerSpec extends Specification {
 		setup:
 			def text = "Test{{#foo}}{{/foo}}"
 			def options = [disableLambda: true];
-			def t = Hogan.compile(text, options)
+			def t = compiler.compile(text, options)
 			def context = [
 				'baz': true,
 				'foo': { return { "{{#baz}}abcdef{{/baz}}" } }
@@ -352,9 +352,9 @@ class HoganCompilerSpec extends Specification {
 	def 'Mustache not reprocessed for method calls in interpolations'() {
 		setup:
 			def text = "text with {{foo}} inside"
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def text2 = "text with {{{foo}}} inside"
-			def t2 = Hogan.compile(text2)
+			def t2 = compiler.compile(text2)
 
 			def context = [
 				'foo': { "no processing of {{tags}}" }
@@ -372,7 +372,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Mustache is reprocessed for lambdas in interpolations'() {
 		setup:
 			def text = "text with {{foo}} inside"
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def context = [
 				'bar': 42,
 				'foo': { return { "processing of {{bar}}" } }
@@ -386,7 +386,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Nested Section'() {
 		when:
 			def text = '{{#foo}}{{#bar}}{{baz}}{{/bar}}{{/foo}}'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([foo: 42, bar: 42, baz: 42])
 		then:
 			s == "42"
@@ -395,7 +395,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Dotted Names'() {
 		when:
 			def text = '"{{person.name}}" == "{{#person}}{{name}}{{/person}}"'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([person: [name: 'Joe']])
 		then:
 			'"Joe" == "Joe"' == s
@@ -404,7 +404,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Implicit Iterator'() {
 		when:
 			def text = '{{#stuff}} {{.}} {{/stuff}}'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([stuff:[42,43,44]])
 		then:
 			' 42  43  44 ' == s
@@ -414,8 +414,8 @@ class HoganCompilerSpec extends Specification {
 		when:
 			def text = '{{>include}}*\n{{= | | =}}\n*|>include|'
 			def partialText = ' .{{value}}. '
-			def partial = Hogan.compile(partialText)
-			def t = Hogan.compile(text)
+			def partial = compiler.compile(partialText)
+			def t = compiler.compile(text)
 			def s = t.render([value: 'yes'], [include: partial])
 		then:
 			' .yes. *\n* .yes. ' == s
@@ -425,7 +425,7 @@ class HoganCompilerSpec extends Specification {
 		when:
 			def text = 'foo{{>mypartial}}baz'
 			def partialText = ' bar '
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([:], [mypartial: partialText])
 		then:
 			'foo bar baz' == s
@@ -434,7 +434,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Missing Partials'() {
 		when:
 			def text = 'foo{{>mypartial}} bar'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render([:])
 		then:
 			'foo bar' == s
@@ -443,7 +443,7 @@ class HoganCompilerSpec extends Specification {
 	def 'Indented Standalone Comment'() {
 		when:
 			def text = 'Begin.\n {{! Indented Comment Block! }}\nEnd.'
-			def t = Hogan.compile(text)
+			def t = compiler.compile(text)
 			def s = t.render()
 		then:
 			'Begin.\nEnd.' == s
@@ -451,7 +451,7 @@ class HoganCompilerSpec extends Specification {
 
 	def "Doesn't parse templates that have non-\$ tags inside super template tags"() {
 		when:
-			Hogan.compile('{{<foo}}{{busted}}{{/foo}}')
+			compiler.compile('{{<foo}}{{busted}}{{/foo}}')
 		then:
 			def m = thrown(ParseException)
 			m.message == 'Illegal content in < super tag.'
@@ -800,7 +800,7 @@ class HoganCompilerSpec extends Specification {
 	@Unroll("#name: #desc")
 	def 'shared tests'() {
 		when:
-			def t = Hogan.compile(test.text, test.options ?: [:])
+			def t = compiler.compile(test.text, test.options ?: [:])
 			def s = t.render(test.data, test.partials)
 		then:
 			s == test.expected
@@ -831,7 +831,7 @@ class HoganCompilerSpec extends Specification {
 			}
 		]
 
-		def template = Hogan.compile('{{#wrapped}}{{name}} is awesome.{{/wrapped}}')
+		def template = compiler.compile('{{#wrapped}}{{name}} is awesome.{{/wrapped}}')
 		def s = template.render(data)
 
 		then:
