@@ -13,6 +13,8 @@ the [spec](https://github.com/mustache/spec).
 Hogan compiles templates to `HoganPage` objects, which have a render method.
 
 ```groovy
+import com.github.plecong.hogan.Hogan
+
 def data = [ screenName: 'plecong' ]
 
 def template = Hogan.compile('Follow @{{screenName}}.')
