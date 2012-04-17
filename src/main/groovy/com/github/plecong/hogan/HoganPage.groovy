@@ -18,8 +18,6 @@ abstract class HoganPage {
 	static Pattern HCHARS_PATTERN = ~/[&<>\"\']/
 
 	String source
-	String generated
-	List tokens
 	HoganCompiler compiler
 	Map options
 
@@ -38,11 +36,7 @@ abstract class HoganPage {
 
 		ib();
 	}
-/*
-	Object run() {
-		render(getBinding()?.variables)
-	}
-*/
+
 	// overridden by compiled
 	abstract Map<String,Map> getCodeData()
 	abstract String r(Deque context, Map partials, String indent)
@@ -104,7 +98,7 @@ abstract class HoganPage {
 			return null
 		}
 
-		partial.base = compiledTemplate
+		partial.base = template
 		if (partial.subs) {
 			// this is "specialized" because it has it's own set of subs
 			// that will override the default ones compiled into the template
@@ -167,6 +161,7 @@ abstract class HoganPage {
 		return pass
 	}
 
+	// dotted-find
 	def d(String key, Deque ctx, Map partials, boolean returnFound) {
 		def names = key.tokenize('.')
 		def val = f(names[0], ctx, partials, returnFound)
@@ -200,7 +195,7 @@ abstract class HoganPage {
 
 	// find
 	def f(String key, Deque ctx, Map partials, boolean returnFound) {
-		Map level = ctx.find { m -> ObjectUtils.hasProperty(m, key) }
+		def level = ctx.find { m -> ObjectUtils.hasProperty(m, key) }
 
 		if (level == null) {
 			return (returnFound) ? false : ''

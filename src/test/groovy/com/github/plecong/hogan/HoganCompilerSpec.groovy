@@ -797,6 +797,13 @@ class HoganCompilerSpec extends Specification {
 		]
 	]
 
+	// for mustache.java to find this...
+	static items = [
+					[name: 'red', current: true, url: '#Red'],
+					[name: 'green', current: false, url: '#Green'],
+					[name: 'blue', current: false, url: '#Blue'],
+				]
+
 	@Unroll("#name: #desc")
 	def 'shared tests'() {
 		when:

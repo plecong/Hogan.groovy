@@ -51,7 +51,7 @@ class GroovyHoganCompiler extends HoganCompiler {
 			def path = (options.keepGenerated instanceof String) ? options.keepGenerated : ''
 			def dir = new File(path)
 			dir.mkdirs()
-			def file = new File(dir, "hogan${System.nanoTime()}_${counter.incrementAndGet()}.groovy")
+			def file = new File(dir, options.name ? "${options.name}.groovy" : "hogan${System.nanoTime()}_${counter.incrementAndGet()}.groovy")
 			file.text = generated
 		}
 

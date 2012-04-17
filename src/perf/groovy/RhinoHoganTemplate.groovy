@@ -13,8 +13,6 @@
  *  limitations under the License.
  */
 
-package com.github.plecong.hogan
-
 import groovy.json.JsonBuilder
 import org.mozilla.javascript.*
 
@@ -31,10 +29,13 @@ class RhinoHoganTemplate {
 			renderScope.parentScope = scope
 
 			renderScope.put('dataArg', renderScope, new JsonBuilder(data).toString())
-			renderScope.put('partialArg', renderScope, new JsonBuilder(partials).toString())
-
 			def dataArg = cx.evaluateString(renderScope, 'JSON.parse(dataArg)', 'argParse1', 0, null)
-			def partialArg = cx.evaluateString(renderScope, 'JSON.parse(partialArg)', 'argParse2', 0, null)
+
+			NativeObject partialArg = new NativeObject()
+			partials.each { k, v ->
+				partialArg.defineProperty(k, v, NativeObject.READONLY)
+			}
+
 			result = ScriptableObject.callMethod(cx, template, 'render', [dataArg, partialArg].toArray())
 
 		} finally {

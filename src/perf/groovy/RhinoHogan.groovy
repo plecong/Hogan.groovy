@@ -13,8 +13,6 @@
  *  limitations under the License.
  */
 
-package com.github.plecong.hogan
-
 import org.mozilla.javascript.*
 
 class RhinoHogan {
