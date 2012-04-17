@@ -2,7 +2,7 @@ apply plugin: 'groovy'
 apply plugin: 'maven'
 
 group = 'com.github.plecong'
-version = '2.0'
+version = '3.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -19,7 +19,7 @@ dependencies {
     groovy 'org.codehaus.groovy:groovy:1.8.6'
 
     testCompile('org.spockframework:spock-core:0.6-groovy-1.8') {
-        exclude module: 'groovy-all'
+        exclude group: 'org.codehaus.groovy', module: 'groovy-all'
     }
 
     perfTestCompile 'com.googlecode.gbench:gbench:0.3.0-groovy-1.8'
@@ -32,6 +32,29 @@ dependencies {
     perfTestCompile sourceSets.test.compileClasspath
 }
 
+groovydoc {
+    def title = "Hogan.groovy ${version}"
+    windowTitle title
+    docTitle title
+    link 'http://groovy.codehaus.org/gapi/', 'org.codehaus.groovy.,groovy.'
+}
+
+task javadocJar(type: Jar, dependsOn: groovydoc) {
+    classifier = 'javadoc'
+    from 'build/docs/groovydoc'
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+    archives javadocJar
+}
+
 task wrapper(type: Wrapper) {
     gradleVersion = '1.0-rc-1'
 }
@@ -39,4 +62,59 @@ task wrapper(type: Wrapper) {
 task performanceTest(type: JavaExec, dependsOn: testClasses) {
     classpath sourceSets.perfTest.runtimeClasspath
     main = 'Simple'
+}
+
+if (hasProperty('sonatypeUsername') && hasProperty('sonatypePassword')) {
+
+apply plugin: 'signing'
+
+signing {
+    sign configurations.archives
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            def auth = {
+                authentication(userName: sonatypeUsername, password: sonatypePassword)
+            }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/", auth)
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots", auth)
+
+            pom.project {
+                name 'Hogan.groovy'
+                artifactId = 'hogan-groovy'
+                packaging 'jar'
+                description 'A Groovy port of the Hogan.js compiler for Mustache templates.'
+                inceptionYear '2012'
+
+                url 'http://github.com/plecong/Hogan.groovy'
+
+                scm {
+                    url 'scm:git://github.com/plecong/Hogan.groovy.git'
+                    connection 'scm:git://github.com/plecong/Hogan.groovy.git'
+                }
+
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'plecong'
+                        name 'Phuong LeCong'
+                    }
+                }
+            }
+        }
+    }
+}
+
 }
