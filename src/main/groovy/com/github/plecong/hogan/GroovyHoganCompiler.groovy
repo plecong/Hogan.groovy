@@ -61,7 +61,6 @@ class GroovyHoganCompiler extends HoganCompiler {
 		args[1] = this
 		args[2] = options
 		def page = (HoganPage)clazz.newInstance(args)
-		page.generated = generated
 		page
 	}
 

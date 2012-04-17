@@ -6,7 +6,6 @@ version = '2.0'
 
 repositories {
     mavenCentral()
-    // maven { url "http://groovypp.artifactoryonline.com/groovypp/libs-releases-local" }
     maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
 }
 
@@ -14,20 +13,14 @@ sourceSets {
     perfTest {
         groovy.srcDirs = ['src/perf/groovy']
     }
-    generated {
-        groovy.srcDirs = ['build/generated/groovy']
-    }
 }
 
 dependencies {
     groovy 'org.codehaus.groovy:groovy:1.8.6'
-    // groovy 'org.mbte.groovypp:groovypp-all:0.9.0_1.8.2'
 
     testCompile('org.spockframework:spock-core:0.6-groovy-1.8') {
         exclude module: 'groovy-all'
     }
-
-    generatedCompile sourceSets.main.output
 
     perfTestCompile 'com.googlecode.gbench:gbench:0.3.0-groovy-1.8'
     perfTestCompile 'com.samskivert:jmustache:1.5'
@@ -35,26 +28,15 @@ dependencies {
     perfTestCompile 'org.mozilla:rhino:1.7R3'
 
     perfTestCompile sourceSets.main.output
-    perfTestCompile configurations.testCompile
     perfTestCompile sourceSets.test.output
-    perfTestCompile sourceSets.generated.output
-
-    perfTestRuntime configurations.testRuntime
+    perfTestCompile sourceSets.test.compileClasspath
 }
 
 task wrapper(type: Wrapper) {
     gradleVersion = '1.0-rc-1'
 }
 
-task generateTests(type: JavaExec, dependsOn: testClasses) {
-    classpath sourceSets.test.runtimeClasspath
-    main = 'Generate'
-}
-
-compileGeneratedGroovy.dependsOn generateTests
-
-task performanceTest(type: JavaExec, dependsOn: generatedClasses) {
+task performanceTest(type: JavaExec, dependsOn: testClasses) {
     classpath sourceSets.perfTest.runtimeClasspath
     main = 'Simple'
-    jvmArgs = ['-server']
 }
