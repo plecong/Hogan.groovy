@@ -23,13 +23,15 @@ import com.github.plecong.hogan.groovy.GroovyHoganCompiler
  */
 class Hogan {
 
+	static GroovyHoganCompiler COMPILER = new GroovyHoganCompiler()
+
 	/**
 	 * Helper method to output the Groovy source of a "compiled"
 	 * Hogan template source. This is useful in utilities that will
 	 * pre-generate the source to be compiled by the groovyc compiler.
 	 */
 	static String generate(String source, Map options = [:]) {
-
+		COMPILER.generate(source, options)
 	}
 
 	/**
@@ -37,7 +39,7 @@ class Hogan {
 	 * Groovy object that can be used to render output.
 	 */
 	static HoganTemplate compile(String source, Map options = [:]) {
-		new GroovyHoganCompiler().compile(source, options)
+		COMPILER.compile(source, options)
 	}
 
 	/**
@@ -46,7 +48,7 @@ class Hogan {
 	 * actual template object.
 	 */
 	static Class<HoganTemplate> compileClass(String source, Map options = [:]) {
-
+		COMPILER.compileClass(source, options)
 	}
 
 	/**
@@ -54,7 +56,7 @@ class Hogan {
 	 * instantiates the template object with the appropriate constructor
 	 * arguments and a reference to a compiler.
 	 */
-	static create(Class<HoganTemplate> clazz, Map options = [:]) {
-
+	static HoganTemplate create(Class<HoganTemplate> clazz, String source, Map options = [:]) {
+		(HoganTemplate)clazz.newInstance([source, COMPILER, options].toArray())
 	}
 }
