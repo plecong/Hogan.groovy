@@ -13,22 +13,38 @@
  *  limitations under the License.
  */
 
-package com.github.plecong.hogan
+package com.github.plecong.hogan.parser
 
-/**
- *
- */
-interface HoganCompiler {
+import groovy.transform.Canonical
 
-	/**
-	 * Compiles a Hogan template source string into a template object.
-	 * This method is required by the template to compile string partials
-	 * and the results of a lambda evaluation.
-	 */
-	HoganTemplate compile(String source, Map options)
+@Canonical
+class HoganToken {
 
-	Class<HoganTemplate> compileClass(String source, Map options)
+	public static Map tags = [
+		'#': 1,
+		'^': 2,
+		'<': 3,
+		'$': 4,
+		'/': 5,
+		'!': 6,
+		'>': 7,
+		'=': 8,
+		'_v': 9,
+		'{': 10,
+		'&': 11,
+		'_t': 12,
+		'\n': 13
+	]
 
-	String generate(String source, Map options)
-
+	CharSequence n
+	def tag
+	def i
+	def indent
+	String text
+	String otag
+	String ctag
+	def nodes
+	def end
+	boolean last
 }
+

@@ -13,11 +13,9 @@
  *  limitations under the License.
  */
 
-package com.github.plecong.hogan
+package com.github.plecong.hogan.parser
 
 import java.util.regex.Pattern
-
-import org.codehaus.groovy.ast.ClassHelper
 
 class HoganScanner {
 
@@ -27,15 +25,14 @@ class HoganScanner {
 		IN_TAG
 	}
 
-
-	List tokens = []
+	List<HoganToken> tokens = []
 	StringBuilder buf = new StringBuilder()
 	int lineStart = 0
 	String otag = '{{'
 	String ctag = '}}'
 	def seenTag = false
 
-	def scan(String text, String delimiters = null) {
+	List<HoganToken> scan(String text, String delimiters = null) {
 		def tagType
 
 		State state = State.IN_TEXT
@@ -67,7 +64,7 @@ class HoganScanner {
 				}
 			} else if (state == State.IN_TAG_TYPE) {
 				i += otag.length() - 1
-				boolean tag = Hogan.tags.containsKey(text[i + 1])
+				boolean tag = HoganToken.tags.containsKey(text[i + 1])
 				tagType = tag ? text[i + 1] : '_v'
 
 				if (tagType == '=') {
@@ -164,7 +161,7 @@ class HoganScanner {
 
 	protected boolean lineIsWhitespace() {
 		tokens[lineStart..<tokens.size()].every { tok ->
-			Hogan.tags[tok.tag] < Hogan.tags['_v'] || (tok.tag == '_t' && tok.text?.trim().length() == 0)
+			HoganToken.tags[tok.tag] < HoganToken.tags['_v'] || (tok.tag == '_t' && tok.text?.trim().length() == 0)
 		}
 	}
 

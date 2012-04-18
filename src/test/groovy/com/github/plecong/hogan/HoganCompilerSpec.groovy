@@ -15,13 +15,16 @@
 
 package com.github.plecong.hogan
 
+import com.github.plecong.hogan.groovy.GroovyHoganCompiler
+import com.github.plecong.hogan.parser.*
+
 import spock.lang.*
 
 class HoganCompilerSpec extends Specification {
 
+	GroovyHoganCompiler compiler
 	HoganScanner scanner
 	HoganParser parser
-	GroovyHoganCompiler compiler
 
 	def setup() {
 		scanner = new HoganScanner()
@@ -808,7 +811,7 @@ class HoganCompilerSpec extends Specification {
 	def 'shared tests'() {
 		when:
 			def t = compiler.compile(test.text, test.options ?: [:])
-			def s = t.render(test.data, test.partials)
+			def s = t.render(test.data, (Map)test.partials)
 		then:
 			s == test.expected
 		where:

@@ -13,7 +13,7 @@
  *  limitations under the License.
  */
 
-package com.github.plecong.hogan
+package com.github.plecong.hogan.parser
 
 import spock.lang.Specification
 

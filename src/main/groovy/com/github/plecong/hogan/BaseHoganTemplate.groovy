@@ -15,10 +15,30 @@
 
 package com.github.plecong.hogan
 
-class ParseException extends RuntimeException {
-	def token
-	ParseException(String message, token = null) {
-		super(message)
-		this.token = token
+abstract class BaseHoganTemplate implements HoganTemplate {
+
+	abstract void render(Writer writer, Map context, TemplateLoader loader)
+
+	String render(Map context = [:], Map partials = [:]) {
+		render(context, new TemplateLoader() {
+			HoganTemplate load(String name) { partials[name] }
+			Object getAt(String key) { partials[key] }
+		})
 	}
+
+	String render(Map context = [:], TemplateLoader loader) {
+		def writer = new StringWriter();
+		render(writer, context, loader)
+		writer.toString()
+	}
+
+	Writable make(Map binding = [:]) {
+		new Writable() {
+			Writer writeTo(Writer writer) {
+				render(writer, binding, null)
+				writer
+			}
+		}
+	}
+
 }

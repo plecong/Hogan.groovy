@@ -13,55 +13,57 @@
  *  limitations under the License.
  */
 
-package com.github.plecong.hogan
+package com.github.plecong.hogan.groovy
 
 import java.util.concurrent.atomic.AtomicInteger
+import com.github.plecong.hogan.BaseHoganCompiler
+import com.github.plecong.hogan.HoganTemplate
+import com.github.plecong.hogan.parser.HoganToken
+import com.github.plecong.hogan.utils.HoganBuffer
 
-class GroovyHoganCompiler extends HoganCompiler {
+class GroovyHoganCompiler extends BaseHoganCompiler {
 
 	ClassLoader classLoader
 
 	static AtomicInteger counter = new AtomicInteger()
-	int ctxcnt = 0
 
 	static importLines = [
 		'com.github.plecong.hogan.HoganCompiler',
-		'com.github.plecong.hogan.HoganPage'
+		'com.github.plecong.hogan.TemplateLoader',
+		'com.github.plecong.hogan.groovy.GroovyHoganTemplate'
 	]
 
 	public GroovyHoganCompiler() {
 		classLoader = new GroovyClassLoader(Thread.currentThread().getContextClassLoader());
 	}
 
-	def createBuffer() { new HoganBuffer() }
+	@Override
+	protected def createBuffer() { new HoganBuffer() }
 
-	HoganPage compile(String source, Map options = [:]) {
-		def scanner = new HoganScanner()
-		def parser = new HoganParser()
-
-		def tokens = scanner.scan(source, options.delimiters)
-		def tree = parser.parse(tokens, source, options)
-		compile(tree, source, options)
+	HoganTemplate compile(String source, Map options = [:]) {
+		def clazz = compileClass(source, options)
+		(HoganTemplate)clazz.newInstance([source, this, options].toArray())
 	}
 
-	HoganPage compile(List tree, String source, Map options = [:]) {
-		def generated = generate(tree, source, options)
+	Class<HoganTemplate> compileClass(String source, Map options = [:]) {
+		// generate the name if one doesn't exist because the generated class must have a name
+		if (!options.name) {
+			options.name = "hogan${System.nanoTime()}_${counter.incrementAndGet()}"
+		}
+
+		def generated = generate(source, options)
 
 		if (options.keepGenerated) {
 			def path = (options.keepGenerated instanceof String) ? options.keepGenerated : ''
+
 			def dir = new File(path)
 			dir.mkdirs()
-			def file = new File(dir, options.name ? "${options.name}.groovy" : "hogan${System.nanoTime()}_${counter.incrementAndGet()}.groovy")
+
+			def file = new File(dir, "${options.name}.groovy")
 			file.text = generated
 		}
 
-		def clazz = classLoader.parseClass(generated)
-		def args = new Object[3]
-		args[0] = source
-		args[1] = this
-		args[2] = options
-		def page = (HoganPage)clazz.newInstance(args)
-		page
+		classLoader.parseClass(generated)
 	}
 
 	void writeImports(writer) {
@@ -71,12 +73,11 @@ class GroovyHoganCompiler extends HoganCompiler {
 		writer.println()
 	}
 
-	def stringify(Map codeObj, String text, Map options) {
+	String stringify(Map codeObj, String text, String name) {
 		def writer = new StringWriter()
-		def name = options.name ?: "hogan${System.nanoTime()}_${counter.incrementAndGet()}"
 
 		writeImports(writer)
-		writer.println("class ${name} extends HoganPage {")
+		writer.println("class ${name} extends GroovyHoganTemplate {")
 
 		// partials variable, which is just a map of symbol name, to name of partial
 		writer.print('Map getCodeData() { [')
@@ -88,7 +89,7 @@ class GroovyHoganCompiler extends HoganCompiler {
 		writer.println("public ${name}(String s, HoganCompiler c, Map o = [:], Map p = [:], Map u = [:]) { super(s, c, o, p, u); }")
 
 		// main rendering method
-		writer.println('String r(Deque c, Map p, String i) {')
+		writer.println('String r(Deque c, TemplateLoader p, String i) {')
 		wrapMain(writer, codeObj.code)
 		writer.println('}')
 
@@ -104,7 +105,7 @@ class GroovyHoganCompiler extends HoganCompiler {
 	}
 
 	// #
-	void section(node, context) {
+	void section(HoganToken node, Map context) {
 		def method = chooseMethod(node.n)
 		def escId = esc(node.n)
 		def start = node.i
@@ -118,7 +119,7 @@ class GroovyHoganCompiler extends HoganCompiler {
 	}
 
 	// ^
-	void invertedSection(node, context) {
+	void invertedSection(HoganToken node, Map context) {
 		def method = chooseMethod(node.n)
 		def escId = esc(node.n)
 
@@ -128,12 +129,12 @@ class GroovyHoganCompiler extends HoganCompiler {
 	}
 
 	// >
-	void partial(node, context) {
+	void partial(HoganToken node, Map context) {
 		createPartial(node, context)
 	}
 
 	// <
-	void include(node, context) {
+	void include(HoganToken node, Map context) {
 		def ctx = [partials: [:], code: new StringBuilder(), subs: [:], inPartial: true, serialNo: context.serialNo];
 		walk(node.nodes, ctx);
 		def template = context.partials[createPartial(node, context)]
@@ -142,7 +143,7 @@ class GroovyHoganCompiler extends HoganCompiler {
 	}
 
 	// $
-	void includeSub(node, context) {
+	void includeSub(HoganToken node, Map context) {
 		def ctx = [subs: [:], code: new StringBuilder(), partials: context.partials, prefix: node.n, serialNo: context.serialNo]
 		walk(node.nodes, ctx)
 		context.subs[node.n] = ctx.code
@@ -152,26 +153,26 @@ class GroovyHoganCompiler extends HoganCompiler {
 	}
 
 	// \n
-	void newLine(node, context) {
+	void newLine(HoganToken node, Map context) {
 		context.code << writeStr("'\\n'" + (node.last ? '' : ' + i'))
 	}
 
 	// _v
-	void variable(node, context) {
+	void variable(HoganToken node, Map context) {
 		context.code << 't.b(t.v(t.' + chooseMethod(node.n) + '("' + esc(node.n) + '",c,p,false)));'
 	}
 
 	// _t
-	void text(node, context) {
+	void text(HoganToken node, Map context) {
 		context.code << writeStr('\'' + esc(node.text) + '\'')
 	}
 
 	// & and {
-	void tripleStache(node, context) {
+	void tripleStache(HoganToken node, Map context) {
 		context.code << 't.b(t.t(t.' + chooseMethod(node.n) + '("' + esc(node.n) + '",c,p,false)));'
 	}
 
-	private String createPartial(node, context) {
+	private String createPartial(HoganToken node, Map context) {
 		String prefix = '<' + (context.prefix ?: '')
 		String sym = prefix + node.n + context.serialNo++
 		context.partials[sym] = [name: node.n, partials: [:], subs: [:]]
@@ -188,7 +189,7 @@ class GroovyHoganCompiler extends HoganCompiler {
 	}
 
 	private String stringifyFunctions(Map obj) {
-		def functionLines = obj.collect { key, val -> "'${esc(key)}': { Deque c, Map p, HoganPage t -> ${val} }" }
+		def functionLines = obj.collect { key, val -> "'${esc(key)}': { Deque c, TemplateLoader p, GroovyHoganTemplate t -> ${val} }" }
 		return functionLines ? '[' + functionLines.join(',') + ']' : '[:]'
 	}
 

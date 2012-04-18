@@ -13,7 +13,7 @@
  *  limitations under the License.
  */
 
-package com.github.plecong.hogan
+package com.github.plecong.hogan.utils
 
 class HoganBuffer implements CharSequence {
 	@Delegate StringBuffer buffer = new StringBuffer()

@@ -13,13 +13,11 @@
  *  limitations under the License.
  */
 
-package com.github.plecong.hogan
+package com.github.plecong.hogan.js
 
-class JsHoganCompiler extends HoganCompiler {
+import com.github.plecong.hogan.BaseHoganCompiler
 
-	HoganPage compile(String source, Map options) {
-		throw new UnsupportedOperationException('Cannot compile yet')
-	}
+class JsHoganCompiler { // extends BaseHoganCompiler {
 
 	def stringify(Map codeObj, String text, Map options) {
 		new StringBuilder() << "{code: function (c,p,i) { " << Hogan.wrapMain(codeObj.code) << " }," << stringifyPartials(codeObj) << "}"

@@ -15,37 +15,46 @@
 
 package com.github.plecong.hogan
 
-/** Helper object */
+import com.github.plecong.hogan.groovy.GroovyHoganCompiler
+
+/**
+ * A convenience class that is a facade on top of the parsing and compilation
+ * classes to enable easy access to compiled templates.
+ */
 class Hogan {
 
-	public static Map tags = [
-		'#': 1,
-		'^': 2,
-		'<': 3,
-		'$': 4,
-		'/': 5,
-		'!': 6,
-		'>': 7,
-		'=': 8,
-		'_v': 9,
-		'{': 10,
-		'&': 11,
-		'_t': 12,
-		'\n': 13
-	]
+	/**
+	 * Helper method to output the Groovy source of a "compiled"
+	 * Hogan template source. This is useful in utilities that will
+	 * pre-generate the source to be compiled by the groovyc compiler.
+	 */
+	static String generate(String source, Map options = [:]) {
 
-	static compile(String source, Map options = [:]) {
-		def scanner = new HoganScanner()
-		def parser = new HoganParser()
-		def compiler = new GroovyHoganCompiler()
+	}
 
-		def tokens = scanner.scan(source, options.delimiters)
-		def tree = parser.parse(tokens, source, options)
+	/**
+	 * Compiles the Hogan template source into an actual
+	 * Groovy object that can be used to render output.
+	 */
+	static HoganTemplate compile(String source, Map options = [:]) {
+		new GroovyHoganCompiler().compile(source, options)
+	}
 
-		if (options.asString) {
-			compiler.generate(tree)
-		} else {
-			compiler.compile(tree, source, options)
-		}
+	/**
+	 * Compiles the template source into a class that implements
+	 * HoganTemplate that can be instantiated to create the
+	 * actual template object.
+	 */
+	static Class<HoganTemplate> compileClass(String source, Map options = [:]) {
+
+	}
+
+	/**
+	 * Helper method that takes the class from compileClass and
+	 * instantiates the template object with the appropriate constructor
+	 * arguments and a reference to a compiler.
+	 */
+	static create(Class<HoganTemplate> clazz, Map options = [:]) {
+
 	}
 }

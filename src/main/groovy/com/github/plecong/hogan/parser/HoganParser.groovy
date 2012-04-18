@@ -13,7 +13,7 @@
  *  limitations under the License.
  */
 
-package com.github.plecong.hogan
+package com.github.plecong.hogan.parser
 
 /**
  * Parses the stream of <code>HoganToken</code>s into a tree that will
@@ -48,7 +48,7 @@ class HoganParser {
 				throw new ParseException('Illegal content in < super tag.', token)
 			}
 
-			if (Hogan.tags[token.tag] <= Hogan.tags['$'] || isOpener(token, customTags)) {
+			if (HoganToken.tags[token.tag] <= HoganToken.tags['$'] || isOpener(token, customTags)) {
 				stack.push(token)
 				token.nodes = buildTree(tokens, token.tag, stack, customTags)
 			} else if (token.tag == '/') {

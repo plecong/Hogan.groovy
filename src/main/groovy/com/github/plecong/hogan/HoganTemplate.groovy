@@ -15,20 +15,17 @@
 
 package com.github.plecong.hogan
 
-/**
- *
- */
-interface HoganCompiler {
+import groovy.text.Template
 
-	/**
-	 * Compiles a Hogan template source string into a template object.
-	 * This method is required by the template to compile string partials
-	 * and the results of a lambda evaluation.
-	 */
-	HoganTemplate compile(String source, Map options)
+interface HoganTemplate extends Template {
 
-	Class<HoganTemplate> compileClass(String source, Map options)
+	String render()
+	String render(Map context)
+	String render(Map context, Map partials)
 
-	String generate(String source, Map options)
+	String render(Map context, TemplateLoader loader)
+
+	// the real method
+	void render(Writer writer, Map context, TemplateLoader loader)
 
 }
