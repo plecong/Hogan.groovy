@@ -15,9 +15,11 @@
 
 package com.github.plecong.hogan
 
-abstract class BaseHoganTemplate implements HoganTemplate {
+import groovy.text.Template
 
-	abstract void render(Writer writer, Map context, TemplateLoader loader)
+abstract class BaseHoganTemplate implements HoganTemplate, Template {
+
+	abstract void render(Writer writer, Object context, TemplateLoader loader)
 
 	String render(Map context = [:], Map partials = [:]) {
 		render(context, new TemplateLoader() {

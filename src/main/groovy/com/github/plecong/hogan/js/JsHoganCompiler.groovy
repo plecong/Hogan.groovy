@@ -17,7 +17,7 @@ package com.github.plecong.hogan.js
 
 import com.github.plecong.hogan.BaseHoganCompiler
 
-class JsHoganCompiler { // extends BaseHoganCompiler {
+class JsHoganCompiler {
 
 	def stringify(Map codeObj, String text, Map options) {
 		new StringBuilder() << "{code: function (c,p,i) { " << Hogan.wrapMain(codeObj.code) << " }," << stringifyPartials(codeObj) << "}"

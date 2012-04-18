@@ -1,3 +1,18 @@
+/*
+ *  Copyright 2012 Phuong LeCong
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package com.github.plecong.hogan.groovy
 
 import java.util.regex.Pattern
@@ -23,12 +38,11 @@ abstract class GroovyHoganTemplate extends BaseHoganTemplate {
 	static Pattern QUOT_PATTERN = ~/\"/
 	static Pattern HCHARS_PATTERN = ~/[&<>\"\']/
 
-	String source
-	HoganCompiler compiler
-	Map options
-
-	Map partials = [:]
-	Map subs = [:]
+	final String source
+	final HoganCompiler compiler
+	final Map options
+	final Map partials
+	final Map subs
 
 	private StringBuilder buffer
 
@@ -37,8 +51,8 @@ abstract class GroovyHoganTemplate extends BaseHoganTemplate {
 		this.compiler = compiler
 		this.options = options
 
-		this.partials += codeData.partials + p
-		this.subs += codeData.subs + u
+		this.partials = (codeData.partials ?: [:]) + p
+		this.subs = (codeData.subs ?: [:]) + u
 
 		ib();
 	}
@@ -48,7 +62,7 @@ abstract class GroovyHoganTemplate extends BaseHoganTemplate {
 	abstract String r(Deque context, TemplateLoader partials, String indent)
 
 	// variable escaping (was hoganEscape())
-	String v(def str) {
+	String v(Object str) {
 		str = t(str)
 		return HCHARS_PATTERN.matcher(str) ?
 			str
@@ -61,15 +75,15 @@ abstract class GroovyHoganTemplate extends BaseHoganTemplate {
 	}
 
 	// triple stache
-	String t(def val) {
+	String t(Object val) {
 		coerceToString(val)
 	}
 
-	String coerceToString(def val) {
+	String coerceToString(Object val) {
 		val == null ? '' : val as String
 	}
 
-	void render(Writer writer, Map context, TemplateLoader loader) {
+	void render(Writer writer, Object context, TemplateLoader loader) {
 		def contextStack = new ArrayDeque()
 		contextStack.push(context ?: [:])
 		writer.write(ri(contextStack, loader))
@@ -142,7 +156,7 @@ abstract class GroovyHoganTemplate extends BaseHoganTemplate {
 	}
 
 	// section
-	def s(def val, Deque ctx, TemplateLoader partials, boolean inverted, int start, int end, String tags) {
+	def s(Object val, Deque ctx, TemplateLoader partials, boolean inverted, int start, int end, String tags) {
 		boolean pass
 
 		// TODO: for static compilation have to check for each type
@@ -218,7 +232,7 @@ abstract class GroovyHoganTemplate extends BaseHoganTemplate {
 	}
 
 	// lambda section: higher order templates
-	def ls(Closure val, Map cx, TemplateLoader partials, String text, String tags) {
+	def ls(Closure val, Object cx, TemplateLoader partials, String text, String tags) {
 		Closure cl = val.clone()
 		cl.delegate = cx
 		def result
@@ -234,7 +248,7 @@ abstract class GroovyHoganTemplate extends BaseHoganTemplate {
 	}
 
 	// compile template
-	def ct(String text, Map cx, TemplateLoader partials, Map options = [:]) {
+	def ct(String text, Object cx, TemplateLoader partials, Map options = [:]) {
 		if (this.options.disableLambda) {
 			throw new RuntimeException('Lambda features disabled.')
 		}
@@ -260,7 +274,7 @@ abstract class GroovyHoganTemplate extends BaseHoganTemplate {
 
 	// method replace section
 	def ms(Closure func, Deque ctx, TemplateLoader partials, boolean inverted, int start, int end, String tags) {
-		Map cx = ctx.peek()
+		def cx = ctx.peek()
 		Closure cl = func.clone()
 		cl.delegate = cx
 		def result = cl.call()

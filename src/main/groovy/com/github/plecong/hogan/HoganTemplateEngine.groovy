@@ -15,12 +15,27 @@
 
 package com.github.plecong.hogan
 
+import groovy.text.Template
+import groovy.text.TemplateEngine
+
+import com.github.plecong.hogan.groovy.GroovyHoganCompiler
+
 /**
- * The TemplateLoader is a pluggable replacement to the Map of
- * partials that is passed into the rendering of a Hogan template,
- * enabling dynamic loading of partials from various sources.
+ * An implementation of Groovy's <code>TemplateEngine</code> using
+ * Hogan/Mustache templates
  */
-interface TemplateLoader {
-	HoganTemplate load(String name)
-	Object getAt(String key)
+class HoganTemplateEngine extends TemplateEngine {
+
+	final HoganCompiler compiler = new GroovyHoganCompiler()
+
+	/**
+	 * Creates an instance of a HoganTemplate that implements the Template
+	 * interface.
+	 *
+	 * Note: instances returned are not thread-safe yet.
+	 */
+	Template createTemplate(Reader reader) {
+		compiler.compile(reader.text, [:])
+	}
+
 }

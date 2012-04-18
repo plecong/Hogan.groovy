@@ -15,17 +15,16 @@
 
 package com.github.plecong.hogan
 
-import groovy.text.Template
-
-interface HoganTemplate extends Template {
+/**
+ * The base interface for compiled templates.
+ */
+interface HoganTemplate {
 
 	String render()
 	String render(Map context)
 	String render(Map context, Map partials)
-
 	String render(Map context, TemplateLoader loader)
 
-	// the real method
-	void render(Writer writer, Map context, TemplateLoader loader)
+	void render(Writer writer, Object context, TemplateLoader loader)
 
 }
