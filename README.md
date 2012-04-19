@@ -60,6 +60,36 @@ and the exact same Mustache templates can be compiled into JavaScript and includ
 into source page for client-side template generation.
 
 
+## Grab and Go (Maven Repositories)
+
+Hogan.groovy is now available in [Maven Central](http://search.maven.org).
+
+# Stable Release
+
+**Maven**
+
+*Note: If you're pulling this into a Java project to use, you'll need to add Groovy 1.8 to your runtime.*
+
+```xml
+<dependency>
+	<groupId>com.github.plecong</groupId>
+	<artifactId>hogan-groovy</artifactId>
+	<version>3.0</version>
+</dependency>
+```
+
+**Grab/Grapes**
+
+```groovy
+@Grab(group='com.github.plecong', module='hogan-groovy', version='3.0')
+```
+
+**Gradle**
+```groovy
+'com.github.plecong:hogan-groovy:3.0'
+```
+
+
 ## Motivation
 
 Mostly, because it could be done. There are other alternatives for compiling Mustache templates on the JVM:
