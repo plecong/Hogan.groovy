@@ -113,7 +113,7 @@ during server-side rendering including:
 All of the compilation options for Hogan.js are valid here, including `asString`,
 `sectionTags`, `delimiters`, and `disableLambda`. Along with these there are:
 
-keepGenerated: when compiling the HoganPage class, keep the generated Groovy source
+`keepGenerated`: when compiling the HoganPage class, keep the generated Groovy source
 file. This option will be used in pre-generating and compiling for inclusion in
 WAR files.
 
