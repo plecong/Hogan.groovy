@@ -1,4 +1,4 @@
-## Hogan.groovy - A Mustache compiler for Groovy.
+# Hogan.groovy - A Mustache compiler for Groovy.
 
 [Hogan.groovy](http://github.com/plecong/Hogan.groovy) is a
 [Groovy](https://github.com/twitter/hogan.js) port of the
@@ -64,7 +64,7 @@ into source page for client-side template generation.
 
 Hogan.groovy is now available in [Maven Central](http://search.maven.org).
 
-# Stable Release
+### Stable Release
 
 **Maven**
 
@@ -85,6 +85,7 @@ Hogan.groovy is now available in [Maven Central](http://search.maven.org).
 ```
 
 **Gradle**
+
 ```groovy
 'com.github.plecong:hogan-groovy:3.0'
 ```
